@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: zorven-community
+    runtime: python
+    plan: starter
+    buildCommand: python -m py_compile zorven/server.py zorven/desktop_app.py
+    startCommand: python zorven/server.py
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATA_FILE
+        value: /var/data/zorven_data.json
+    disk:
+      name: zorven-data
+      mountPath: /var/data
+      sizeGB: 1

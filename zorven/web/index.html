@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f242e">
+  <title>Zorven Community</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23d6f24a'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='sans-serif' font-size='36' font-weight='700' fill='%23182000'%3EZ%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app-shell" aria-label="Zorven community chat">
+    <aside class="rail" aria-label="Servers">
+      <button class="server-mark active" type="button" aria-label="Zorven Community">Z</button>
+      <span class="rail-divider" aria-hidden="true"></span>
+      <button class="server-mark add-server" type="button" aria-label="Create a server">+</button>
+    </aside>
+
+    <aside class="channel-panel" id="channelPanel">
+      <header class="community-header">
+        <div>
+          <p class="eyebrow">COMMUNITY</p>
+          <h1>Zorven</h1>
+        </div>
+        <button class="icon-button" id="newServerButton" type="button" aria-label="Create server">+</button>
+      </header>
+      <nav class="channel-list" aria-label="Channels">
+        <p class="section-label">TEXT CHANNELS</p>
+        <div id="channelList"></div>
+      </nav>
+      <section class="user-bar" id="userBar">
+        <span class="avatar avatar-self" id="selfAvatar">?</span>
+        <div class="user-name"><strong id="selfName">Guest</strong><span id="selfStatus">Sign in to join in</span></div>
+        <button class="icon-button" id="accountButton" type="button" aria-label="Account">&#9881;</button>
+      </section>
+    </aside>
+
+    <section class="chat-panel">
+      <header class="chat-header">
+        <button class="mobile-menu icon-button" id="menuButton" type="button" aria-label="Open channels">&#9776;</button>
+        <span class="hash">#</span>
+        <div><h2 id="channelTitle">general</h2><p id="channelDescription">Loading channel...</p></div>
+        <div class="header-actions"><span class="online-dot"></span><span id="onlineCount">Community online</span></div>
+      </header>
+      <div class="messages" id="messages" aria-live="polite"></div>
+      <form class="composer" id="messageForm">
+        <input id="messageInput" maxlength="2000" autocomplete="off" placeholder="Message #general" aria-label="Message channel">
+        <button class="send-button" type="submit" aria-label="Send message">Send</button>
+      </form>
+    </section>
+
+    <aside class="members-panel" aria-label="Members">
+      <header><span class="online-dot"></span> ONLINE - <span id="memberCount">0</span></header>
+      <div id="memberList" class="member-list"></div>
+    </aside>
+  </main>
+
+  <dialog id="authDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="authForm">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow">WELCOME TO ZORVEN</p>
+      <h2 id="authHeading">Sign in to the community</h2>
+      <p class="dialog-copy" id="authCopy">Use your account to post messages and create servers.</p>
+      <label>USERNAME<input id="usernameInput" minlength="3" maxlength="40" required autocomplete="username"></label>
+      <label>PASSWORD<input id="passwordInput" type="password" minlength="8" required autocomplete="current-password"></label>
+      <p class="form-error" id="authError" role="alert"></p>
+      <button class="primary-button" id="authSubmit" value="default" type="submit">Sign in</button>
+      <button class="text-button" id="authSwitch" type="button">Need an account? Create one</button>
+    </form>
+  </dialog>
+
+  <dialog id="serverDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="serverForm">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow">NEW SPACE</p>
+      <h2>Create a server</h2>
+      <p class="dialog-copy">Start a focused space for your friends or team.</p>
+      <label>SERVER NAME<input id="serverNameInput" minlength="2" maxlength="60" required autocomplete="off"></label>
+      <p class="form-error" id="serverError" role="alert"></p>
+      <button class="primary-button" value="default" type="submit">Create server</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
