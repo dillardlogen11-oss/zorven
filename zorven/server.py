@@ -372,6 +372,15 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             DATA["sessions"] = {token: name for token, name in DATA["sessions"].items() if name != username}
             save_data()
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
+        elif path == "/api/staff/reset-accounts":
+            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+                self._send_json({"error": "A valid setup key is required"}, 403)
+                return
+            removed = len(DATA["users"])
+            DATA["users"] = {}
+            DATA["sessions"] = {}
+            save_data()
+            self._send_json({"cleared": True, "removed": removed})
         elif path == "/api/staff/recover-admin":
             if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
                 self._send_json({"error": "A valid setup key is required"}, 403)

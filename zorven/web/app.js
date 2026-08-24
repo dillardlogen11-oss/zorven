@@ -3,7 +3,7 @@
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
-    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"),
+    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
     accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
     channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
@@ -160,6 +160,7 @@
     elements.fullAccessLabel.hidden = isBootstrap;
     elements.recoverAdmin.hidden = !isBootstrap;
     elements.claimTeam.hidden = !isBootstrap;
+    elements.resetAccounts.hidden = !isBootstrap;
     elements.fullAccess.checked = true;
     elements.staffError.textContent = "";
     elements.staffDialog.showModal();
@@ -207,6 +208,15 @@
     try {
       await api("/api/staff/claim-team-account", { method: "POST", body: JSON.stringify({ setupKey: elements.staffSetupKey.value, password: elements.staffPassword.value }) });
       notify("The Zorven Team account is ready. Sign in with username zorven-team.");
+    } catch (error) { elements.staffError.textContent = error.message; }
+  });
+
+  elements.resetAccounts.addEventListener("click", async () => {
+    if (!window.confirm("Delete every account on this server? This cannot be undone.")) return;
+    elements.staffError.textContent = "";
+    try {
+      const result = await api("/api/staff/reset-accounts", { method: "POST", body: JSON.stringify({ setupKey: elements.staffSetupKey.value }) });
+      notify(`Removed ${result.removed} accounts. You can now set up the first staff account.`);
     } catch (error) { elements.staffError.textContent = error.message; }
   });
 
