@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f242e">
+  <title>Zorven Admin</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23d6f24a'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='sans-serif' font-size='36' font-weight='700' fill='%23182000'%3EZ%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body class="admin-body">
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div><p class="eyebrow">ZORVEN</p><h1>Admin console</h1></div>
+      <div class="admin-header-actions">
+        <span id="adminIdentity" class="admin-identity"></span>
+        <a class="text-button" href="/login">Back to chat</a>
+      </div>
+    </header>
+
+    <section id="loginGate" class="admin-panel">
+      <h2>Sign in required</h2>
+      <p class="dialog-copy">Sign in with a staff account that has member management permission to open the console.</p>
+      <label>USERNAME<input id="adminUsername" autocomplete="username"></label>
+      <label>PASSWORD<input id="adminPassword" type="password" autocomplete="current-password"></label>
+      <p class="form-error" id="loginError" role="alert"></p>
+      <button class="primary-button" id="adminLoginButton" type="button">Sign in</button>
+    </section>
+
+    <section id="adminContent" class="admin-content" hidden>
+      <div class="admin-stats" id="statsGrid"></div>
+
+      <section class="admin-panel">
+        <div class="admin-panel-header">
+          <h2>Accounts</h2>
+          <div class="admin-panel-actions">
+            <input id="userSearch" placeholder="Search by username" autocomplete="off">
+            <button class="text-button" id="refreshUsers" type="button">Refresh</button>
+            <button class="text-button" id="clearQueueButton" type="button">Clear matchmaking queue</button>
+            <button class="text-button" id="exportDataButton" type="button">Export data</button>
+          </div>
+        </div>
+        <p class="form-error" id="usersError" role="alert"></p>
+        <div class="admin-table" id="usersTable"></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/admin.js"></script>
+</body>
+</html>

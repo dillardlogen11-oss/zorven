@@ -72,6 +72,7 @@ STAFF_PROFILES = {
     "moderator": {"tag": "GUARDIAN", "color": "#78b7ff", "permissions": ["moderate_chat"]},
     "zorven": {"tag": "CREATOR", "color": "#ed7d68", "permissions": ALL_PERMISSIONS},
     "zorvenbot": {"tag": "AUTOMATION", "color": "#9b8cff", "permissions": ["publish_updates", "moderate_chat", "send_as_bot"]},
+    "zorven-team": {"tag": "ZORVEN TEAM", "color": "#57e0c0", "permissions": ALL_PERMISSIONS},
 }
 
 STAFF_PROFILES["zorvenbot"] = {"tag": "AUTOMATION", "color": "#9b8cff", "permissions": ALL_PERMISSIONS}
@@ -206,6 +207,9 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self._send_json({"queuedPlayers": len(DATA["queue"]), "status": "open"})
         elif path == "/api/servers":
             self._send_json({"servers": list(DATA["servers"].values())})
+        elif path == "/api/team":
+            team = [public_user(user) for user in DATA["users"].values() if user.get("role") == "staff" and not is_banned(user)]
+            self._send_json({"team": team})
         elif path == "/api/voice":
             rooms = {}
             for username, presence in DATA["voice"].items():
@@ -225,10 +229,16 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self.send_response(302)
             self.send_header("Location", "/login")
             self.end_headers()
-        elif path in {"/server", "/zorven-server", "/login", "/zorven-login", "/account", "/zorven-account", "/admin", "/zorven-admin"}:
+        elif path in {"/server", "/zorven-server", "/login", "/zorven-login", "/account", "/zorven-account"}:
             self._send_file("index.html", "text/html; charset=utf-8")
+        elif path in {"/admin", "/zorven-admin"}:
+            self._send_file("admin.html", "text/html; charset=utf-8")
         elif path == "/app.js":
             self._send_file("app.js", "text/javascript; charset=utf-8")
+        elif path == "/admin.js":
+            self._send_file("admin.js", "text/javascript; charset=utf-8")
+        elif path == "/admin.css":
+            self._send_file("admin.css", "text/css; charset=utf-8")
         elif path == "/styles.css":
             self._send_file("styles.css", "text/css; charset=utf-8")
         elif path == "/discord.css":
@@ -346,6 +356,20 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Username already exists"}, 409)
                 return
             DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": {"tag": "FOUNDER", "color": "#f0b232", "permissions": ALL_PERMISSIONS}, "createdAt": int(time.time())}
+            save_data()
+            self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
+        elif path == "/api/staff/claim-team-account":
+            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+                self._send_json({"error": "A valid setup key is required"}, 403)
+                return
+            password = str(payload.get("password", ""))
+            if len(password) < 8:
+                self._send_json({"error": "Password must be 8+ characters"}, 400)
+                return
+            username = "zorven-team"
+            existing = DATA["users"].get(username, {})
+            DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": STAFF_PROFILES["zorven-team"].copy(), "displayName": existing.get("displayName", "Zorven Team"), "bio": existing.get("bio", ""), "createdAt": existing.get("createdAt", int(time.time()))}
+            DATA["sessions"] = {token: name for token, name in DATA["sessions"].items() if name != username}
             save_data()
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
         elif path == "/api/staff/recover-admin":

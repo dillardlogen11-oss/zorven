@@ -50,3 +50,18 @@ account**, enter that key, and create the account. The first account receives al
 staff permissions. This setup path automatically locks after a staff account has
 been created; later full-access staff can create additional staff accounts from
 the staff panel.
+
+### Zorven Team account
+
+The staff setup dialog also has **Claim the Zorven Team account with this
+password**, available while `SETUP_KEY` is set. Enter the setup key and a
+password, then use it to sign in as `zorven-team`, a real account with every
+staff permission. Re-running this action resets that account's password.
+
+### Admin console
+
+Staff with member management permission see an admin console icon in the chat
+sidebar, which opens `/admin` in a new tab. That page is a separate,
+authenticated console for viewing service stats, searching accounts, granting or
+removing staff status, and banning or unbanning members. It uses the same
+sign-in session as the chat client.

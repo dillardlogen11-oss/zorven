@@ -1,12 +1,12 @@
 (() => {
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [] };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
-    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"),
+    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"),
     accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
-    channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton")
+    channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
   };
 
   async function api(path, options = {}) {
@@ -30,11 +30,25 @@
     elements.selfName.textContent = user ? user.displayName : "Guest";
     elements.selfStatus.textContent = user ? (user.tag || "MEMBER") : "Sign in to join in";
     elements.selfAvatar.textContent = initials(user?.username);
-    elements.staffPanel.hidden = !user?.permissions?.includes("manage_members");
-    elements.memberList.innerHTML = user ? `<div class="member"><span class="avatar">${escapeHtml(initials(user.username))}</span><span>${escapeHtml(user.username)}</span></div><div class="member"><span class="avatar">Z</span><span>Zorven Team</span></div>` : `<div class="member"><span class="avatar">Z</span><span>Zorven Team</span></div>`;
-    const count = user ? 2 : 1;
+    const canManage = !!user?.permissions?.includes("manage_members");
+    elements.staffPanel.hidden = !canManage;
+    elements.adminPanel.hidden = !canManage;
+    renderMembers();
+  }
+
+  function renderMembers() {
+    const roster = [...state.team];
+    if (state.user && !roster.some(member => member.username === state.user.username)) roster.unshift(state.user);
+    elements.memberList.innerHTML = roster.length
+      ? roster.map(member => `<div class="member"><span class="avatar">${escapeHtml(initials(member.username))}</span><span>${escapeHtml(member.displayName || member.username)}</span></div>`).join("")
+      : `<div class="member"><span class="avatar">Z</span><span>Zorven Team</span></div>`;
+    const count = Math.max(roster.length, 1);
     elements.memberCount.textContent = count;
     elements.onlineCount.textContent = `${count} online`;
+  }
+
+  async function loadTeam() {
+    try { state.team = (await api("/api/team")).team; renderMembers(); } catch { /* team roster is best-effort */ }
   }
 
   function renderChannels() {
@@ -118,6 +132,7 @@
       renderIdentity();
       await selectChannel(state.channels.some(channel => channel.id === state.channel) ? state.channel : state.channels[0]?.id);
       await loadVoice();
+      await loadTeam();
     } catch (error) { elements.description.textContent = "Unable to reach the Zorven service."; notify(error.message); }
   }
 
@@ -144,6 +159,7 @@
     elements.staffSetupKey.required = isBootstrap;
     elements.fullAccessLabel.hidden = isBootstrap;
     elements.recoverAdmin.hidden = !isBootstrap;
+    elements.claimTeam.hidden = !isBootstrap;
     elements.fullAccess.checked = true;
     elements.staffError.textContent = "";
     elements.staffDialog.showModal();
@@ -170,6 +186,7 @@
 
   document.querySelector("#accountButton").addEventListener("click", openAccountSettings);
   document.querySelector("#staffPanelButton").addEventListener("click", openStaffPanel);
+  document.querySelector("#adminPanelButton").addEventListener("click", () => window.open("/admin", "_blank"));
   document.querySelector("#serverSettingsButton").addEventListener("click", openServerSettings);
   document.querySelector("#newServerButton").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector(".add-server").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
@@ -182,6 +199,14 @@
     try {
       await api("/api/staff/recover-admin", { method: "POST", body: JSON.stringify({ setupKey: elements.staffSetupKey.value }) });
       notify("The admin account was removed. You can now create your staff account.");
+    } catch (error) { elements.staffError.textContent = error.message; }
+  });
+
+  elements.claimTeam.addEventListener("click", async () => {
+    elements.staffError.textContent = "";
+    try {
+      await api("/api/staff/claim-team-account", { method: "POST", body: JSON.stringify({ setupKey: elements.staffSetupKey.value, password: elements.staffPassword.value }) });
+      notify("The Zorven Team account is ready. Sign in with username zorven-team.");
     } catch (error) { elements.staffError.textContent = error.message; }
   });
 
@@ -257,5 +282,5 @@
   });
 
   bootstrap();
-  window.setInterval(() => { if (document.visibilityState === "visible") { loadMessages(); loadVoice(); } }, 15000);
+  window.setInterval(() => { if (document.visibilityState === "visible") { loadMessages(); loadVoice(); loadTeam(); } }, 15000);
 })();

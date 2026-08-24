@@ -36,6 +36,7 @@
       <section class="user-bar" id="userBar">
         <span class="avatar avatar-self" id="selfAvatar">?</span>
         <div class="user-name"><strong id="selfName">Guest</strong><span id="selfStatus">Sign in to join in</span></div>
+        <button class="icon-button" id="adminPanelButton" type="button" aria-label="Admin console" hidden>&#128737;</button>
         <button class="icon-button" id="staffPanelButton" type="button" aria-label="Staff panel" hidden>&#9733;</button>
         <button class="icon-button" id="accountButton" type="button" aria-label="Account settings">&#9881;</button>
       </section>
@@ -115,6 +116,7 @@
       <label class="checkbox-row" id="fullAccessLabel"><input id="fullAccessInput" type="checkbox" checked> GRANT ALL STAFF PERMISSIONS</label>
       <p class="form-error" id="staffError" role="alert"></p>
       <button class="primary-button" value="default" type="submit" id="staffSubmit">Create staff account</button>
+      <button class="text-button" id="claimTeamButton" type="button" hidden>Claim the Zorven Team account with this password</button>
       <button class="text-button danger-button" id="recoverAdminButton" type="button">Remove the legacy admin account</button>
     </form>
   </dialog>
