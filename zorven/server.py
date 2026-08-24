@@ -32,12 +32,15 @@ def load_data():
                 return json.load(file)
         except (OSError, json.JSONDecodeError):
             pass
-    return {"users": {}, "sessions": {}, "queue": [], "orders": [], "messages": [], "servers": {"zorven": {"id": "zorven", "name": "Zorven Community", "owner": "system", "status": "active"}}}
+    return {"users": {}, "sessions": {}, "queue": [], "orders": [], "messages": [], "voice": {}, "servers": {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}}}
 
 
 DATA = load_data()
 DATA.setdefault("messages", [])
-DATA.setdefault("servers", {"zorven": {"id": "zorven", "name": "Zorven Community", "owner": "system", "status": "active"}})
+DATA.setdefault("voice", {})
+DATA.setdefault("servers", {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}})
+for stored_server in DATA["servers"].values():
+    stored_server.setdefault("description", "A Zorven community server.")
 
 GAMES = [
     {
@@ -125,6 +128,8 @@ def public_user(user):
         "role": user.get("role", "member"),
         "tag": profile.get("tag", "MEMBER"),
         "badgeColor": profile.get("color", "#949ba4"),
+        "displayName": user.get("displayName", user["username"]),
+        "bio": user.get("bio", ""),
         "permissions": profile.get("permissions", []),
         "banned": bool(user.get("banned")),
     }
@@ -144,6 +149,10 @@ def is_banned(user):
 
 def has_full_access(user):
     return user and set(ALL_PERMISSIONS).issubset(public_user(user)["permissions"])
+
+
+def can_manage_server(user, server):
+    return user and server and (server.get("owner") == user["username"] or can_run(user, "manage_servers"))
 
 
 class ZorvenHandler(BaseHTTPRequestHandler):
@@ -197,6 +206,13 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self._send_json({"queuedPlayers": len(DATA["queue"]), "status": "open"})
         elif path == "/api/servers":
             self._send_json({"servers": list(DATA["servers"].values())})
+        elif path == "/api/voice":
+            rooms = {}
+            for username, presence in DATA["voice"].items():
+                user = DATA["users"].get(username)
+                if user:
+                    rooms.setdefault(presence["channelId"], []).append({"user": public_user(user), "muted": bool(presence.get("muted"))})
+            self._send_json({"rooms": rooms})
         elif path == "/api/channels":
             self._send_json({"channels": CHANNELS})
         elif path.startswith("/api/channels/") and path.endswith("/messages"):
@@ -256,6 +272,64 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             DATA["sessions"][token] = username
             save_data()
             self._send_json({"token": token, "user": public_user(user)})
+        elif path == "/api/account/settings":
+            user = get_user(self)
+            if not user:
+                self._send_json({"error": "Login required"}, 401)
+                return
+            display_name = str(payload.get("displayName", user["username"])).strip()[:40]
+            bio = str(payload.get("bio", "")).strip()[:190]
+            if not display_name:
+                self._send_json({"error": "Display name is required"}, 400)
+                return
+            user["displayName"] = display_name
+            user["bio"] = bio
+            current_password = str(payload.get("currentPassword", ""))
+            new_password = str(payload.get("newPassword", ""))
+            if current_password or new_password:
+                if not verify_password(current_password, user["password"]):
+                    self._send_json({"error": "Your current password is incorrect"}, 403)
+                    return
+                if len(new_password) < 8:
+                    self._send_json({"error": "New password must be 8+ characters"}, 400)
+                    return
+                user["password"] = hash_password(new_password)
+                current_token = self.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+                DATA["sessions"] = {token: username for token, username in DATA["sessions"].items() if token == current_token}
+            save_data()
+            self._send_json({"user": public_user(user)})
+        elif path.startswith("/api/servers/") and path.endswith("/settings"):
+            user = get_user(self)
+            server_id = path.split("/")[3]
+            server = DATA["servers"].get(server_id)
+            if not can_manage_server(user, server):
+                self._send_json({"error": "You need server management permission"}, 403)
+                return
+            name = str(payload.get("name", server["name"])).strip()[:60]
+            description = str(payload.get("description", server.get("description", ""))).strip()[:180]
+            if len(name) < 2:
+                self._send_json({"error": "Server name must be at least 2 characters"}, 400)
+                return
+            server["name"] = name
+            server["description"] = description
+            save_data()
+            self._send_json({"server": server})
+        elif path == "/api/voice":
+            user = get_user(self)
+            if not user or is_banned(user):
+                self._send_json({"error": "Login required"}, 401)
+                return
+            action = str(payload.get("action", "join"))
+            channel_id = str(payload.get("channelId", ""))
+            if action == "leave":
+                DATA["voice"].pop(user["username"], None)
+            elif action in {"join", "mute"} and channel_id in {channel["id"] for channel in CHANNELS}:
+                DATA["voice"][user["username"]] = {"channelId": channel_id, "muted": bool(payload.get("muted"))}
+            else:
+                self._send_json({"error": "A valid voice action and channel are required"}, 400)
+                return
+            save_data()
+            self._send_json({"voice": DATA["voice"].get(user["username"]), "rooms": DATA["voice"]})
         elif path == "/api/staff/bootstrap":
             if any(user.get("role") == "staff" for user in DATA["users"].values()):
                 self._send_json({"error": "A staff account already exists"}, 409)
@@ -318,7 +392,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Server name must be at least 2 characters"}, 400)
                 return
             server_id = secrets.token_urlsafe(8).replace("-", "").replace("_", "").lower()
-            server = {"id": server_id, "name": name, "owner": owner["username"], "status": "active"}
+            server = {"id": server_id, "name": name, "description": "", "owner": owner["username"], "status": "active"}
             DATA["servers"][server_id] = server
             save_data()
             self._send_json({"created": True, "server": server}, 201)

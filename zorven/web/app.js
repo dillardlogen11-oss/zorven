@@ -1,10 +1,12 @@
 (() => {
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, channels: [], channel: "general", registerMode: false };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
     staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"),
-    channelList: document.querySelector("#channelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel")
+    accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
+    serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
+    channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton")
   };
 
   async function api(path, options = {}) {
@@ -25,9 +27,10 @@
 
   function renderIdentity() {
     const user = state.user;
-    elements.selfName.textContent = user ? user.username : "Guest";
+    elements.selfName.textContent = user ? user.displayName : "Guest";
     elements.selfStatus.textContent = user ? (user.tag || "MEMBER") : "Sign in to join in";
     elements.selfAvatar.textContent = initials(user?.username);
+    elements.staffPanel.hidden = !user?.permissions?.includes("manage_members");
     elements.memberList.innerHTML = user ? `<div class="member"><span class="avatar">${escapeHtml(initials(user.username))}</span><span>${escapeHtml(user.username)}</span></div><div class="member"><span class="avatar">Z</span><span>Zorven Team</span></div>` : `<div class="member"><span class="avatar">Z</span><span>Zorven Team</span></div>`;
     const count = user ? 2 : 1;
     elements.memberCount.textContent = count;
@@ -37,6 +40,48 @@
   function renderChannels() {
     elements.channelList.innerHTML = state.channels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("");
     document.querySelectorAll("[data-channel]").forEach(button => button.addEventListener("click", () => selectChannel(button.dataset.channel)));
+  }
+
+  function renderVoiceChannels() {
+    elements.voiceChannelList.innerHTML = state.channels.map(channel => {
+      const occupants = state.voiceRooms[channel.id] || [];
+      const active = state.voiceChannel === channel.id;
+      const people = occupants.map(item => `<span class="voice-user">${escapeHtml(item.user.displayName || item.user.username)}${item.muted ? " (muted)" : ""}</span>`).join("");
+      return `<section class="voice-room ${active ? "active" : ""}"><button class="voice-button" type="button" data-voice-channel="${escapeHtml(channel.id)}"><span>&#9835;</span>${escapeHtml(channel.name)}<small>${occupants.length || ""}</small></button>${active ? `<div class="voice-controls"><button type="button" data-voice-action="mute">${state.muted ? "Unmute" : "Mute"}</button><button type="button" data-voice-action="leave">Leave</button></div>` : ""}${people ? `<div class="voice-users">${people}</div>` : ""}</section>`;
+    }).join("");
+    document.querySelectorAll("[data-voice-channel]").forEach(button => button.addEventListener("click", () => joinVoice(button.dataset.voiceChannel)));
+    document.querySelectorAll("[data-voice-action]").forEach(button => button.addEventListener("click", () => button.dataset.voiceAction === "leave" ? leaveVoice() : toggleMute()));
+  }
+
+  async function loadVoice() {
+    try { state.voiceRooms = (await api("/api/voice")).rooms; renderVoiceChannels(); } catch (error) { if (state.user) notify(error.message); }
+  }
+
+  async function joinVoice(channelId) {
+    if (!state.user) return openAuth();
+    try {
+      if (!state.microphoneStream) state.microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      state.voiceChannel = channelId;
+      state.muted = false;
+      await api("/api/voice", { method: "POST", body: JSON.stringify({ action: "join", channelId, muted: false }) });
+      await loadVoice();
+    } catch (error) { notify(error.name === "NotAllowedError" ? "Microphone permission is required to join voice." : error.message); }
+  }
+
+  async function toggleMute() {
+    if (!state.voiceChannel) return;
+    state.muted = !state.muted;
+    state.microphoneStream?.getAudioTracks().forEach(track => { track.enabled = !state.muted; });
+    await api("/api/voice", { method: "POST", body: JSON.stringify({ action: "mute", channelId: state.voiceChannel, muted: state.muted }) });
+    await loadVoice();
+  }
+
+  async function leaveVoice() {
+    state.microphoneStream?.getTracks().forEach(track => track.stop());
+    state.microphoneStream = null;
+    state.voiceChannel = null;
+    state.muted = false;
+    try { await api("/api/voice", { method: "POST", body: JSON.stringify({ action: "leave" }) }); await loadVoice(); } catch (error) { notify(error.message); }
   }
 
   async function selectChannel(channelId) {
@@ -66,11 +111,13 @@
 
   async function bootstrap() {
     try {
-      const [channelData, identity] = await Promise.all([api("/api/channels"), api("/api/me")]);
+      const [channelData, identity, serverData] = await Promise.all([api("/api/channels"), api("/api/me"), api("/api/servers")]);
       state.channels = channelData.channels;
       state.user = identity.user;
+      state.server = serverData.servers.find(server => server.id === "zorven") || serverData.servers[0];
       renderIdentity();
       await selectChannel(state.channels.some(channel => channel.id === state.channel) ? state.channel : state.channels[0]?.id);
+      await loadVoice();
     } catch (error) { elements.description.textContent = "Unable to reach the Zorven service."; notify(error.message); }
   }
 
@@ -103,7 +150,27 @@
     elements.staffUsername.focus();
   }
 
-  document.querySelector("#accountButton").addEventListener("click", () => state.user?.permissions?.includes("manage_members") ? openStaffPanel() : state.user ? notify(`Signed in as ${state.user.username}`) : openAuth());
+  function openAccountSettings() {
+    if (!state.user) return openAuth();
+    elements.displayName.value = state.user.displayName || state.user.username;
+    elements.bio.value = state.user.bio || "";
+    elements.currentPassword.value = "";
+    elements.newPassword.value = "";
+    elements.accountError.textContent = "";
+    elements.accountDialog.showModal();
+  }
+
+  function openServerSettings() {
+    if (!state.user?.permissions?.includes("manage_servers")) return notify("You need server management permission.");
+    elements.serverSettingsName.value = state.server?.name || "";
+    elements.serverDescription.value = state.server?.description || "";
+    elements.serverSettingsError.textContent = "";
+    elements.serverSettingsDialog.showModal();
+  }
+
+  document.querySelector("#accountButton").addEventListener("click", openAccountSettings);
+  document.querySelector("#staffPanelButton").addEventListener("click", openStaffPanel);
+  document.querySelector("#serverSettingsButton").addEventListener("click", openServerSettings);
   document.querySelector("#newServerButton").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector(".add-server").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector("#menuButton").addEventListener("click", () => elements.panel.classList.toggle("open"));
@@ -142,6 +209,24 @@
     } catch (error) { elements.serverError.textContent = error.message; }
   });
 
+  elements.accountForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") return elements.accountDialog.close();
+    try {
+      const result = await api("/api/account/settings", { method: "POST", body: JSON.stringify({ displayName: elements.displayName.value, bio: elements.bio.value, currentPassword: elements.currentPassword.value, newPassword: elements.newPassword.value }) });
+      state.user = result.user; renderIdentity(); elements.accountDialog.close(); notify("Account settings saved.");
+    } catch (error) { elements.accountError.textContent = error.message; }
+  });
+
+  elements.serverSettingsForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") return elements.serverSettingsDialog.close();
+    try {
+      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/settings`, { method: "POST", body: JSON.stringify({ name: elements.serverSettingsName.value, description: elements.serverDescription.value }) });
+      state.server = result.server; document.querySelector(".community-header h1").textContent = result.server.name; elements.serverSettingsDialog.close(); notify("Server settings saved.");
+    } catch (error) { elements.serverSettingsError.textContent = error.message; }
+  });
+
   elements.staffForm.addEventListener("submit", async event => {
     event.preventDefault();
     if (event.submitter?.value === "cancel") return elements.staffDialog.close();
@@ -172,5 +257,5 @@
   });
 
   bootstrap();
-  window.setInterval(() => { if (document.visibilityState === "visible") loadMessages(); }, 15000);
+  window.setInterval(() => { if (document.visibilityState === "visible") { loadMessages(); loadVoice(); } }, 15000);
 })();

@@ -25,16 +25,19 @@
           <p class="eyebrow">COMMUNITY</p>
           <h1>Zorven</h1>
         </div>
-        <button class="icon-button" id="newServerButton" type="button" aria-label="Create server">+</button>
+        <div class="community-actions"><button class="icon-button" id="serverSettingsButton" type="button" aria-label="Server settings">&#9881;</button><button class="icon-button" id="newServerButton" type="button" aria-label="Create server">+</button></div>
       </header>
       <nav class="channel-list" aria-label="Channels">
         <p class="section-label">TEXT CHANNELS</p>
         <div id="channelList"></div>
+        <p class="section-label voice-section-label">VOICE CHANNELS</p>
+        <div id="voiceChannelList"></div>
       </nav>
       <section class="user-bar" id="userBar">
         <span class="avatar avatar-self" id="selfAvatar">?</span>
         <div class="user-name"><strong id="selfName">Guest</strong><span id="selfStatus">Sign in to join in</span></div>
-        <button class="icon-button" id="accountButton" type="button" aria-label="Account">&#9881;</button>
+        <button class="icon-button" id="staffPanelButton" type="button" aria-label="Staff panel" hidden>&#9733;</button>
+        <button class="icon-button" id="accountButton" type="button" aria-label="Account settings">&#9881;</button>
       </section>
     </aside>
 
@@ -70,6 +73,33 @@
       <button class="primary-button" id="authSubmit" value="default" type="submit">Sign in</button>
       <button class="text-button" id="authSwitch" type="button">Need an account? Create one</button>
       <button class="text-button" id="staffSetupButton" type="button">Set up the first staff account</button>
+    </form>
+  </dialog>
+
+  <dialog id="accountDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="accountForm">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow">ACCOUNT SETTINGS</p>
+      <h2>My profile</h2>
+      <label>DISPLAY NAME<input id="displayNameInput" maxlength="40" required autocomplete="nickname"></label>
+      <label>BIO<textarea id="bioInput" maxlength="190" rows="3" placeholder="Tell your community a little about yourself."></textarea></label>
+      <p class="settings-divider">CHANGE PASSWORD</p>
+      <label>CURRENT PASSWORD<input id="currentPasswordInput" type="password" autocomplete="current-password"></label>
+      <label>NEW PASSWORD<input id="newPasswordInput" type="password" minlength="8" autocomplete="new-password"></label>
+      <p class="form-error" id="accountError" role="alert"></p>
+      <button class="primary-button" value="default" type="submit">Save changes</button>
+    </form>
+  </dialog>
+
+  <dialog id="serverSettingsDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="serverSettingsForm">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow">SERVER SETTINGS</p>
+      <h2>Overview</h2>
+      <label>SERVER NAME<input id="serverSettingsName" minlength="2" maxlength="60" required autocomplete="off"></label>
+      <label>DESCRIPTION<textarea id="serverDescriptionInput" maxlength="180" rows="3" placeholder="What is this server about?"></textarea></label>
+      <p class="form-error" id="serverSettingsError" role="alert"></p>
+      <button class="primary-button" value="default" type="submit">Save server</button>
     </form>
   </dialog>
 
