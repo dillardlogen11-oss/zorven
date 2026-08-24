@@ -40,3 +40,13 @@ service, so select the configured Starter plan or a larger paid plan.
 Before connecting a custom domain, create a staging account, test registration,
 login, messaging, and a restart from the Render dashboard. Render terminates
 HTTPS for its supplied URL and custom domains.
+
+### First staff account
+
+Before creating the first staff account, add a `SETUP_KEY` environment variable
+in the Render service's **Environment** settings. Use a long, unique value and
+keep it private. On the Zorven login screen, select **Set up the first staff
+account**, enter that key, and create the account. The first account receives all
+staff permissions. This setup path automatically locks after a staff account has
+been created; later full-access staff can create additional staff accounts from
+the staff panel.

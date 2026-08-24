@@ -3,6 +3,7 @@
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
+    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"),
     channelList: document.querySelector("#channelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel")
   };
 
@@ -10,7 +11,10 @@
     const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) };
     const response = await fetch(path, { ...options, headers });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "The request could not be completed.");
+    if (!response.ok) {
+      if (response.status === 404 && path === "/api/staff/bootstrap") throw new Error("Staff setup is not deployed yet. Deploy the latest Zorven version, then try again.");
+      throw new Error(data.error || "The request could not be completed.");
+    }
     return data;
   }
 
@@ -82,11 +86,28 @@
     elements.username.focus();
   }
 
-  document.querySelector("#accountButton").addEventListener("click", () => state.user ? notify(`Signed in as ${state.user.username}`) : openAuth());
+  function openStaffPanel() {
+    const canManage = state.user?.permissions?.includes("manage_members");
+    const isBootstrap = !state.user;
+    if (state.user && !canManage) return notify("You need staff management permission.");
+    elements.staffEyebrow.textContent = isBootstrap ? "STAFF SETUP" : "STAFF PANEL";
+    elements.staffHeading.textContent = isBootstrap ? "Create the first staff account" : "Create a staff account";
+    elements.staffCopy.textContent = isBootstrap ? "Use the one-time setup key configured for this service." : "Create a staff account. Full-access staff can manage the community.";
+    elements.staffSetupKeyLabel.hidden = !isBootstrap;
+    elements.staffSetupKey.required = isBootstrap;
+    elements.fullAccessLabel.hidden = isBootstrap;
+    elements.fullAccess.checked = true;
+    elements.staffError.textContent = "";
+    elements.staffDialog.showModal();
+    elements.staffUsername.focus();
+  }
+
+  document.querySelector("#accountButton").addEventListener("click", () => state.user?.permissions?.includes("manage_members") ? openStaffPanel() : state.user ? notify(`Signed in as ${state.user.username}`) : openAuth());
   document.querySelector("#newServerButton").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector(".add-server").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector("#menuButton").addEventListener("click", () => elements.panel.classList.toggle("open"));
   elements.authSwitch.addEventListener("click", () => openAuth(!state.registerMode));
+  document.querySelector("#staffSetupButton").addEventListener("click", () => { elements.authDialog.close(); openStaffPanel(); });
 
   elements.authForm.addEventListener("submit", async event => {
     event.preventDefault();
@@ -110,6 +131,24 @@
       const result = await api("/api/servers", { method: "POST", body: JSON.stringify({ name: elements.serverName.value.trim() }) });
       elements.serverDialog.close(); elements.serverName.value = ""; notify(`${result.server.name} created.`);
     } catch (error) { elements.serverError.textContent = error.message; }
+  });
+
+  elements.staffForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") return elements.staffDialog.close();
+    elements.staffError.textContent = "";
+    const payload = { username: elements.staffUsername.value.trim(), password: elements.staffPassword.value };
+    try {
+      if (state.user) {
+        const result = await api("/api/staff/accounts", { method: "POST", body: JSON.stringify({ ...payload, tag: "STAFF", color: "#c5ed59", fullAccess: elements.fullAccess.checked }) });
+        notify(`${result.user.username} is now staff.`);
+      } else {
+        const result = await api("/api/staff/bootstrap", { method: "POST", body: JSON.stringify({ ...payload, setupKey: elements.staffSetupKey.value }) });
+        notify(`${result.user.username} was created. Sign in to open the staff panel.`);
+      }
+      elements.staffForm.reset();
+      elements.staffDialog.close();
+    } catch (error) { elements.staffError.textContent = error.message; }
   });
 
   elements.form.addEventListener("submit", async event => {

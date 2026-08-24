@@ -69,6 +69,22 @@
       <p class="form-error" id="authError" role="alert"></p>
       <button class="primary-button" id="authSubmit" value="default" type="submit">Sign in</button>
       <button class="text-button" id="authSwitch" type="button">Need an account? Create one</button>
+      <button class="text-button" id="staffSetupButton" type="button">Set up the first staff account</button>
+    </form>
+  </dialog>
+
+  <dialog id="staffDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="staffForm">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow" id="staffEyebrow">STAFF SETUP</p>
+      <h2 id="staffHeading">Create the first staff account</h2>
+      <p class="dialog-copy" id="staffCopy">This action needs the one-time setup key configured for this service.</p>
+      <label id="setupKeyLabel">SETUP KEY<input id="setupKeyInput" type="password" autocomplete="off"></label>
+      <label>USERNAME<input id="staffUsernameInput" minlength="3" maxlength="40" required autocomplete="username"></label>
+      <label>PASSWORD<input id="staffPasswordInput" type="password" minlength="8" required autocomplete="new-password"></label>
+      <label class="checkbox-row" id="fullAccessLabel"><input id="fullAccessInput" type="checkbox" checked> GRANT ALL STAFF PERMISSIONS</label>
+      <p class="form-error" id="staffError" role="alert"></p>
+      <button class="primary-button" value="default" type="submit" id="staffSubmit">Create staff account</button>
     </form>
   </dialog>
 

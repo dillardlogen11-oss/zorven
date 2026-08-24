@@ -13,6 +13,16 @@ WEB_ROOT = os.path.join(ROOT, "web")
 DATA_FILE = os.environ.get("DATA_FILE") or os.path.join(ROOT, "zorven_data.json")
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8765"))
+SETUP_KEY = os.environ.get("SETUP_KEY", "")
+ALL_PERMISSIONS = [
+    "manage_members",
+    "manage_channels",
+    "moderate_chat",
+    "publish_updates",
+    "send_as_bot",
+    "manage_servers",
+    "use_internal_tools",
+]
 
 
 def load_data():
@@ -54,14 +64,14 @@ CHANNELS = [
     {"id": "feedback", "name": "feedback", "description": "Help shape the game."},
 ]
 STAFF_PROFILES = {
-    "admin": {"tag": "FOUNDER", "color": "#f0b232", "permissions": ["manage_members", "manage_channels", "moderate_chat", "publish_updates"]},
+    "admin": {"tag": "FOUNDER", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
     "staff": {"tag": "BUILDER", "color": "#c5ed59", "permissions": ["publish_updates", "moderate_chat"]},
     "moderator": {"tag": "GUARDIAN", "color": "#78b7ff", "permissions": ["moderate_chat"]},
-    "zorven": {"tag": "CREATOR", "color": "#ed7d68", "permissions": ["manage_members", "manage_channels", "moderate_chat", "publish_updates"]},
+    "zorven": {"tag": "CREATOR", "color": "#ed7d68", "permissions": ALL_PERMISSIONS},
     "zorvenbot": {"tag": "AUTOMATION", "color": "#9b8cff", "permissions": ["publish_updates", "moderate_chat", "send_as_bot"]},
 }
 
-STAFF_PROFILES["zorvenbot"] = {"tag": "AUTOMATION", "color": "#9b8cff", "permissions": ["manage_members", "manage_channels", "moderate_chat", "publish_updates", "send_as_bot", "manage_servers", "use_internal_tools"]}
+STAFF_PROFILES["zorvenbot"] = {"tag": "AUTOMATION", "color": "#9b8cff", "permissions": ALL_PERMISSIONS}
 
 
 def save_data():
@@ -130,6 +140,10 @@ def find_user(username):
 
 def is_banned(user):
     return bool(user and user.get("banned"))
+
+
+def has_full_access(user):
+    return user and set(ALL_PERMISSIONS).issubset(public_user(user)["permissions"])
 
 
 class ZorvenHandler(BaseHTTPRequestHandler):
@@ -242,6 +256,24 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             DATA["sessions"][token] = username
             save_data()
             self._send_json({"token": token, "user": public_user(user)})
+        elif path == "/api/staff/bootstrap":
+            if any(user.get("role") == "staff" for user in DATA["users"].values()):
+                self._send_json({"error": "A staff account already exists"}, 409)
+                return
+            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+                self._send_json({"error": "A valid setup key is required"}, 403)
+                return
+            username = str(payload.get("username", "")).strip().lower()
+            password = str(payload.get("password", ""))
+            if len(username) < 3 or len(password) < 8:
+                self._send_json({"error": "Username must be 3+ characters and password 8+ characters"}, 400)
+                return
+            if username in DATA["users"]:
+                self._send_json({"error": "Username already exists"}, 409)
+                return
+            DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": {"tag": "FOUNDER", "color": "#f0b232", "permissions": ALL_PERMISSIONS}, "createdAt": int(time.time())}
+            save_data()
+            self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
         elif path == "/api/staff/accounts":
             creator = get_user(self)
             creator_identity = public_user(creator) if creator else None
@@ -252,13 +284,17 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             password = str(payload.get("password", ""))
             tag = str(payload.get("tag", "CREW")).strip()[:20].upper()
             color = str(payload.get("color", "#c5ed59")).strip()
+            permissions = ALL_PERMISSIONS if bool(payload.get("fullAccess")) else ["publish_updates", "moderate_chat"]
+            if bool(payload.get("fullAccess")) and not has_full_access(creator):
+                self._send_json({"error": "Only a full-access staff account can grant full access"}, 403)
+                return
             if len(username) < 3 or len(password) < 8 or not tag:
                 self._send_json({"error": "Username 3+ characters, password 8+ characters, and a tag are required"}, 400)
                 return
             if username in DATA["users"]:
                 self._send_json({"error": "Username already exists"}, 409)
                 return
-            DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": {"tag": tag, "color": color, "permissions": ["publish_updates", "moderate_chat"]}, "createdAt": int(time.time())}
+            DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": {"tag": tag, "color": color, "permissions": permissions}, "createdAt": int(time.time())}
             save_data()
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
         elif path == "/api/servers":
