@@ -274,6 +274,17 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": {"tag": "FOUNDER", "color": "#f0b232", "permissions": ALL_PERMISSIONS}, "createdAt": int(time.time())}
             save_data()
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
+        elif path == "/api/staff/recover-admin":
+            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+                self._send_json({"error": "A valid setup key is required"}, 403)
+                return
+            if "admin" not in DATA["users"]:
+                self._send_json({"error": "The admin account was not found"}, 404)
+                return
+            del DATA["users"]["admin"]
+            DATA["sessions"] = {token: username for token, username in DATA["sessions"].items() if username != "admin"}
+            save_data()
+            self._send_json({"deleted": True, "username": "admin"})
         elif path == "/api/staff/accounts":
             creator = get_user(self)
             creator_identity = public_user(creator) if creator else None

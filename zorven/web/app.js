@@ -3,7 +3,7 @@
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
-    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"),
+    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"),
     channelList: document.querySelector("#channelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel")
   };
 
@@ -96,6 +96,7 @@
     elements.staffSetupKeyLabel.hidden = !isBootstrap;
     elements.staffSetupKey.required = isBootstrap;
     elements.fullAccessLabel.hidden = isBootstrap;
+    elements.recoverAdmin.hidden = !isBootstrap;
     elements.fullAccess.checked = true;
     elements.staffError.textContent = "";
     elements.staffDialog.showModal();
@@ -108,6 +109,14 @@
   document.querySelector("#menuButton").addEventListener("click", () => elements.panel.classList.toggle("open"));
   elements.authSwitch.addEventListener("click", () => openAuth(!state.registerMode));
   document.querySelector("#staffSetupButton").addEventListener("click", () => { elements.authDialog.close(); openStaffPanel(); });
+  elements.recoverAdmin.addEventListener("click", async () => {
+    if (!window.confirm("Remove the account named admin? This cannot be undone.")) return;
+    elements.staffError.textContent = "";
+    try {
+      await api("/api/staff/recover-admin", { method: "POST", body: JSON.stringify({ setupKey: elements.staffSetupKey.value }) });
+      notify("The admin account was removed. You can now create your staff account.");
+    } catch (error) { elements.staffError.textContent = error.message; }
+  });
 
   elements.authForm.addEventListener("submit", async event => {
     event.preventDefault();
