@@ -47,7 +47,7 @@
   }
 
   function messageMarkup(message) {
-    const tag = message.role === "staff" ? `<span class="role-tag" style="background:${escapeHtml(message.badgeColor || "#d6f24a")}">${escapeHtml(message.tag || "CREW")}</span>` : "";
+    const tag = message.role === "staff" ? `<span class="role-tag" style="--badge-color:${escapeHtml(message.badgeColor || "#d6f24a")}" aria-label="${escapeHtml(message.tag || "STAFF")} staff"><span class="staff-emblem" aria-hidden="true"><i></i><b></b></span><span>${escapeHtml(message.tag || "STAFF")}</span></span>` : "";
     return `<article class="message"><span class="avatar">${escapeHtml(initials(message.username))}</span><div><div class="message-meta"><strong>${escapeHtml(message.username)}</strong>${tag}<span class="message-time">${formatTime(message.createdAt)}</span></div><p class="message-body">${escapeHtml(message.content)}</p></div></article>`;
   }
 
