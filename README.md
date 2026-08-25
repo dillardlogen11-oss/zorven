@@ -65,18 +65,3 @@ service, so select the configured Starter plan or a larger paid plan.
 Before connecting a custom domain, create a staging account, test registration,
 login, messaging, and a restart from the Render dashboard. Render terminates
 HTTPS for its supplied URL and custom domains.
-
-### First staff account
-
-Open `http://127.0.0.1:8765/admin` and use the setup key to create the first
-staff account. The page is available while `SETUP_KEY` is set. Enter the setup
-key and a password, then use it to sign in as `zorven-team`, a real account with
-every staff permission. Re-running this action resets that account's password.
-
-### Admin console
-
-Staff with member management permission see an admin console icon in the chat
-sidebar, which opens `/admin` in a new tab. That page is a separate,
-authenticated console for viewing service stats, searching accounts, granting or
-removing staff status, and banning or unbanning members. It uses the same
-sign-in session as the chat client.
