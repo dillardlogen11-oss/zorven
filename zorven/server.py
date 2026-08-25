@@ -1,10 +1,12 @@
 import hashlib
 import hmac
+import io
 import json
 import os
 import secrets
 import tempfile
 import time
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -221,6 +223,21 @@ def resolve_web_route(path):
     return route_map.get(normalized)
 
 
+def build_client_bundle():
+    """Zip the desktop client (launcher, app, backend, web assets) for download."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file_name in ("start_zorven_chat.bat", "desktop_app.py", "server.py"):
+            file_path = os.path.join(ROOT, file_name)
+            if os.path.isfile(file_path):
+                archive.write(file_path, arcname=f"zorven/{file_name}")
+        for entry in os.listdir(WEB_ROOT):
+            entry_path = os.path.join(WEB_ROOT, entry)
+            if os.path.isfile(entry_path):
+                archive.write(entry_path, arcname=f"zorven/web/{entry}")
+    return buffer.getvalue()
+
+
 class ZorvenHandler(BaseHTTPRequestHandler):
     def _send_json(self, payload, status=200):
         body = json.dumps(payload).encode("utf-8")
@@ -250,10 +267,10 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_download(self):
-        body = b"ZORVEN CLIENT\nDevelopment client placeholder. Connect this launcher to the production client build before release.\n"
+        body = build_client_bundle()
         self.send_response(200)
-        self.send_header("Content-Type", "application/octet-stream")
-        self.send_header("Content-Disposition", "attachment; filename=zorven-client.txt")
+        self.send_header("Content-Type", "application/zip")
+        self.send_header("Content-Disposition", "attachment; filename=zorven-desktop-client.zip")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
