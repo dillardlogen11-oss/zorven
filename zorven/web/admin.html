@@ -43,12 +43,19 @@
       </section>
 
       <section class="admin-panel">
+        <div class="admin-panel-header"><div><p class="eyebrow">STAFF QUEUE</p><h2>Community reviews</h2></div><button class="text-button" id="refreshReviews" type="button">Refresh</button></div>
+        <p class="dialog-copy" id="reviewsEmpty">No communities are waiting for review.</p>
+        <div class="admin-table" id="reviewsTable"></div>
+      </section>
+
+      <section class="admin-panel">
         <div class="admin-panel-header">
           <h2>Accounts</h2>
           <div class="admin-panel-actions">
             <input id="userSearch" placeholder="Search by username" autocomplete="off">
             <button class="text-button" id="refreshUsers" type="button">Refresh</button>
             <button class="text-button" id="clearQueueButton" type="button">Clear matchmaking queue</button>
+            <button class="text-button danger-button" id="clearMessagesButton" type="button">Clear chat messages</button>
             <button class="text-button" id="exportDataButton" type="button">Export data</button>
           </div>
         </div>

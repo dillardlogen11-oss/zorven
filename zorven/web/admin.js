@@ -4,7 +4,7 @@
     loginGate: document.querySelector("#loginGate"), content: document.querySelector("#adminContent"), identity: document.querySelector("#adminIdentity"),
     username: document.querySelector("#adminUsername"), password: document.querySelector("#adminPassword"), loginButton: document.querySelector("#adminLoginButton"), loginError: document.querySelector("#loginError"),
     logoutButton: document.querySelector("#adminLogoutButton"), statsGrid: document.querySelector("#statsGrid"), usersTable: document.querySelector("#usersTable"), usersError: document.querySelector("#usersError"),
-    search: document.querySelector("#userSearch"), refresh: document.querySelector("#refreshUsers"), clearQueue: document.querySelector("#clearQueueButton"), exportData: document.querySelector("#exportDataButton"), maintenanceToggle: document.querySelector("#maintenanceToggle"), maintenanceStatus: document.querySelector("#maintenanceStatus"),
+    search: document.querySelector("#userSearch"), refresh: document.querySelector("#refreshUsers"), refreshReviews: document.querySelector("#refreshReviews"), reviewsEmpty: document.querySelector("#reviewsEmpty"), reviewsTable: document.querySelector("#reviewsTable"), clearQueue: document.querySelector("#clearQueueButton"), clearMessages: document.querySelector("#clearMessagesButton"), exportData: document.querySelector("#exportDataButton"), maintenanceToggle: document.querySelector("#maintenanceToggle"), maintenanceStatus: document.querySelector("#maintenanceStatus"),
     toast: document.querySelector("#toast"),
   };
 
@@ -67,10 +67,11 @@
       const actions = user.banned
         ? `<button type="button" data-action="unban" data-username="${escapeHtml(user.username)}">Unban</button>`
         : `<button type="button" class="danger" data-action="ban" data-username="${escapeHtml(user.username)}">Ban</button>`;
+      const deleteAction = user.username === "admin" ? "" : `<button type="button" class="danger" data-action="delete" data-username="${escapeHtml(user.username)}">Delete</button>`;
       const staffToggle = user.role === "staff"
         ? `<button type="button" data-action="remove-badge" data-username="${escapeHtml(user.username)}">Remove staff</button>`
         : `<button type="button" data-action="assign-badge" data-username="${escapeHtml(user.username)}">Make staff</button>`;
-      return `<div class="admin-row"><div class="admin-row-identity"><strong>${escapeHtml(user.username)}</strong>${badges}</div><div class="admin-row-actions">${staffToggle}${actions}</div></div>`;
+      return `<div class="admin-row"><div class="admin-row-identity"><strong>${escapeHtml(user.username)}</strong>${badges}</div><div class="admin-row-actions">${staffToggle}${actions}${deleteAction}</div></div>`;
     }).join("") || `<p class="dialog-copy">No accounts match your search.</p>`;
     document.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", () => handleUserAction(button.dataset.action, button.dataset.username)));
   }
@@ -87,6 +88,9 @@
         await command("assign_badge", { username, tag: "STAFF", color: "#c5ed59", permissions: ["publish_updates", "moderate_chat"] });
       } else if (action === "remove-badge") {
         await command("remove_badge", { username });
+      } else if (action === "delete") {
+        if (!window.confirm(`Delete ${username}'s account? This cannot be undone.`)) return;
+        await command("delete_user", { username });
       }
       notify(`Updated ${username}.`);
       await loadUsers();
@@ -105,6 +109,18 @@
     try { renderStats((await command("internal_stats")).stats); } catch (error) { notify(error.message); }
   }
 
+  async function loadReviews() {
+    try {
+      const reviews = (await command("list_server_reviews")).reviews.filter(review => review.status === "pending");
+      elements.reviewsEmpty.hidden = reviews.length > 0;
+      elements.reviewsTable.innerHTML = reviews.map(review => `<div class="admin-row"><div class="admin-row-identity"><strong>${escapeHtml(review.serverName)}</strong><span>${escapeHtml(review.owner)}</span></div><div class="admin-row-actions"><button type="button" class="danger" data-review-server="${escapeHtml(review.serverId)}">Delete server</button></div></div>`).join("");
+      document.querySelectorAll("[data-review-server]").forEach(button => button.addEventListener("click", async () => {
+        if (!window.confirm("Delete this community server and notify its owner? This cannot be undone.")) return;
+        try { await command("delete_server", { serverId: button.dataset.reviewServer }); notify("Community server deleted and owner notified."); await Promise.all([loadReviews(), loadStats()]); } catch (error) { notify(error.message); }
+      }));
+    } catch (error) { notify(error.message); }
+  }
+
   elements.maintenanceToggle.addEventListener("click", async () => {
     const enabled = elements.maintenanceToggle.textContent.startsWith("Enable");
     try { await command("toggle_maintenance", { enabled }); await loadStats(); notify(enabled ? "Maintenance mode enabled." : "Maintenance mode disabled."); } catch (error) { notify(error.message); }
@@ -112,6 +128,11 @@
 
   elements.clearQueue.addEventListener("click", async () => {
     try { const result = await command("clear_queue"); notify(`Cleared ${result.removed} queued players.`); await loadStats(); } catch (error) { notify(error.message); }
+  });
+
+  elements.clearMessages.addEventListener("click", async () => {
+    if (!window.confirm("Clear every chat message? This cannot be undone.")) return;
+    try { const result = await command("clear_messages"); notify(`Cleared ${result.removed} messages.`); await loadStats(); } catch (error) { notify(error.message); }
   });
 
   elements.exportData.addEventListener("click", async () => {
@@ -154,6 +175,8 @@
       elements.loginGate.hidden = true;
       elements.content.hidden = false;
       await Promise.all([loadStats(), loadUsers()]);
+      await Promise.all([loadStats(), loadUsers(), loadReviews()]);
+      elements.refreshReviews.addEventListener("click", loadReviews);
     } catch {
       elements.logoutButton.hidden = true;
       elements.loginGate.hidden = false;

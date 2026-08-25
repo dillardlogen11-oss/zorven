@@ -5,16 +5,15 @@
     diamond: ["◇", "#e76cff"], fire: ["●", "#ff6d4a"], star: ["★", "#f7d35c"], tools: ["⚙", "#d8bd32"],
     shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
   };
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [] };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [] };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
     staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), staffBadge: document.querySelector("#staffBadgeInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
     accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), settingsAvatar: document.querySelector("#settingsAvatar"), settingsName: document.querySelector("#settingsName"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
-    serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
-    channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
+    serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
+    serverList: document.querySelector("#serverList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
   };
-
   async function api(path, options = {}) {
     const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) };
     const response = await fetch(path, { ...options, headers });
@@ -41,6 +40,21 @@
     elements.adminPanel.hidden = !canManage;
     document.querySelector("#logoutButton").hidden = !user;
     renderMembers();
+  }
+
+  function renderServers() {
+    elements.serverList.innerHTML = state.servers.map(server => `<button class="server-mark ${server.id === state.server?.id ? "active" : ""}" type="button" data-server-id="${escapeHtml(server.id)}" aria-label="${escapeHtml(server.name)}">${escapeHtml(initials(server.name))}</button>`).join("");
+    document.querySelectorAll("[data-server-id]").forEach(button => button.addEventListener("click", () => selectServer(button.dataset.serverId)));
+  }
+
+  async function selectServer(serverId) {
+    const server = state.servers.find(item => item.id === serverId);
+    if (!server) return;
+    state.server = server;
+    document.querySelector(".server-name-button").firstChild.textContent = `${server.name} `;
+    renderServers();
+    state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(server.id)}`)).channels;
+    await selectChannel(state.channel);
   }
 
   function renderMembers() {
@@ -129,7 +143,7 @@
   async function loadMessages() {
     elements.messages.innerHTML = `<section class="welcome"><div class="welcome-mark">#</div><h3>Welcome to #${escapeHtml(elements.title.textContent)}</h3><p>This is the start of the ${escapeHtml(elements.title.textContent)} channel.</p></section>`;
     try {
-      const { messages } = await api(`/api/channels/${encodeURIComponent(state.channel)}/messages`);
+      const { messages } = await api(`/api/channels/${encodeURIComponent(state.channel)}/messages?serverId=${encodeURIComponent(state.server?.id || "zorven")}`);
       elements.messages.insertAdjacentHTML("beforeend", messages.map(messageMarkup).join(""));
       elements.messages.scrollTop = elements.messages.scrollHeight;
     } catch (error) { notify(error.message); }
@@ -137,14 +151,22 @@
 
   async function bootstrap() {
     try {
-      const [channelData, identity, serverData] = await Promise.all([api("/api/channels"), api("/api/me"), api("/api/servers")]);
-      state.channels = channelData.channels;
+      const [identity, serverData] = await Promise.all([api("/api/me"), api("/api/servers")]);
       state.user = identity.user;
-      state.server = serverData.servers.find(server => server.id === "zorven") || serverData.servers[0];
+      state.servers = serverData.servers;
+      state.server = state.servers.find(server => server.owner === state.user?.username) || state.servers[0];
+      renderServers();
+      document.querySelector(".server-name-button").firstChild.textContent = `${state.server?.name || "Choose a server"} `;
+      state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(state.server?.id || "")}`)).channels;
       renderIdentity();
       await selectChannel(state.channels.some(channel => channel.id === state.channel) ? state.channel : state.channels[0]?.id);
       await loadVoice();
       await loadTeam();
+      try {
+        const directMessages = (await api("/api/dms")).messages;
+        const unread = directMessages.filter(message => !message.read);
+        if (unread.length) notify(`You have ${unread.length} direct message${unread.length === 1 ? "" : "s"} from Zorven staff.`);
+      } catch { /* direct messages are optional */ }
     } catch (error) { elements.description.textContent = "Unable to reach the Zorven service."; notify(error.message); }
   }
 
@@ -213,9 +235,11 @@
   }
 
   function openServerSettings() {
-    if (!state.user?.permissions?.includes("manage_servers")) return notify("You need server management permission.");
+    if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
     elements.serverSettingsName.value = state.server?.name || "";
     elements.serverDescription.value = state.server?.description || "";
+    elements.serverChannels.value = (state.server?.channels || []).map(channel => channel.name).join("\n");
+    elements.serverRoles.value = (state.server?.roles || []).join("\n");
     elements.serverSettingsError.textContent = "";
     elements.serverSettingsDialog.showModal();
   }
@@ -231,12 +255,17 @@
     serverMenu.hidden = !serverMenu.hidden;
     serverMenuButton.setAttribute("aria-expanded", String(!serverMenu.hidden));
   });
-  serverMenu.addEventListener("click", event => {
+  serverMenu.addEventListener("click", async event => {
     const action = event.target.closest("[data-server-action]")?.dataset.serverAction;
     if (!action) return;
     serverMenu.hidden = true;
     serverMenuButton.setAttribute("aria-expanded", "false");
     if (action === "settings") return openServerSettings();
+    if (action === "review") {
+      if (state.server?.owner !== state.user?.username) return notify("Only the server owner can request a review.");
+      try { await api(`/api/servers/${encodeURIComponent(state.server.id)}/review`, { method: "POST" }); notify("Staff review requested."); } catch (error) { notify(error.message); }
+      return;
+    }
     const labels = { boost: "Server Boost", invite: "Invite People", insights: "Server Insights", channel: "Create Channel", category: "Create Category", notifications: "Notification Settings", privacy: "Privacy Settings", nickname: "Change Nickname", muted: "Hide Muted Channels" };
     notify(`${labels[action]} is ready to configure.`);
   });
@@ -290,7 +319,7 @@
     if (event.submitter?.value === "cancel") return elements.serverDialog.close();
     try {
       const result = await api("/api/servers", { method: "POST", body: JSON.stringify({ name: elements.serverName.value.trim() }) });
-      elements.serverDialog.close(); elements.serverName.value = ""; notify(`${result.server.name} created.`);
+      state.servers.push(result.server); elements.serverDialog.close(); elements.serverName.value = ""; await selectServer(result.server.id); notify(`${result.server.name} created.`);
     } catch (error) { elements.serverError.textContent = error.message; }
   });
 
@@ -308,7 +337,7 @@
     if (event.submitter?.value === "cancel") return elements.serverSettingsDialog.close();
     try {
       const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/settings`, { method: "POST", body: JSON.stringify({ name: elements.serverSettingsName.value, description: elements.serverDescription.value }) });
-      state.server = result.server; document.querySelector(".community-header h1").textContent = result.server.name; elements.serverSettingsDialog.close(); notify("Server settings saved.");
+      state.server = result.server; state.servers = state.servers.map(server => server.id === result.server.id ? result.server : server); state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(result.server.id)}`)).channels; renderServers(); document.querySelector(".server-name-button").firstChild.textContent = `${result.server.name} `; elements.serverSettingsDialog.close(); await selectChannel(state.channel); notify("Server settings saved.");
     } catch (error) { elements.serverSettingsError.textContent = error.message; }
   });
 
@@ -336,7 +365,7 @@
     if (!state.user) return openAuth();
     if (!content) return;
     elements.input.disabled = true;
-    try { await api("/api/messages", { method: "POST", body: JSON.stringify({ channelId: state.channel, content }) }); elements.input.value = ""; await loadMessages(); }
+    try { await api("/api/messages", { method: "POST", body: JSON.stringify({ serverId: state.server?.id, channelId: state.channel, content }) }); elements.input.value = ""; await loadMessages(); }
     catch (error) { notify(error.message); }
     finally { elements.input.disabled = false; elements.input.focus(); }
   });

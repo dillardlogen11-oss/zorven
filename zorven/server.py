@@ -6,7 +6,7 @@ import secrets
 import tempfile
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 ROOT = os.path.dirname(__file__)
 WEB_ROOT = os.path.join(ROOT, "web")
@@ -39,6 +39,8 @@ DATA = load_data()
 DATA.setdefault("messages", [])
 DATA.setdefault("voice", {})
 DATA.setdefault("maintenanceMode", False)
+DATA.setdefault("directMessages", [])
+DATA.setdefault("serverReviews", [])
 DATA.setdefault("servers", {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}})
 for stored_server in DATA["servers"].values():
     stored_server.setdefault("description", "A Zorven community server.")
@@ -68,6 +70,15 @@ CHANNELS = [
     {"id": "announcements", "name": "announcements", "description": "Official development updates."},
     {"id": "feedback", "name": "feedback", "description": "Help shape the game."},
 ]
+
+def server_channels(server):
+    return server.get("channels", CHANNELS if server.get("id") == "zorven" else [])
+
+
+for stored_server in DATA["servers"].values():
+    stored_server.setdefault("channels", CHANNELS.copy() if stored_server.get("id") == "zorven" else [])
+    stored_server.setdefault("roles", [])
+
 STAFF_PROFILES = {
     "admin": {"tag": "FOUNDER", "badge": "founder", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
     "staff": {"tag": "BUILDER", "badge": "builder", "color": "#c5ed59", "permissions": ["publish_updates", "moderate_chat"]},
@@ -250,7 +261,9 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         self.do_GET()
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        query = parse_qs(parsed_url.query)
         if path != "/":
             path = path.rstrip("/")
         maintenance_routes = {"/", "/index.html", "/login", "/login.html", "/server", "/server.html", "/app", "/app.html", "/home", "/account", "/zorven-server", "/zorven-account"}
@@ -267,6 +280,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self._send_json({"queuedPlayers": len(DATA["queue"]), "status": "open"})
         elif path == "/api/servers":
             self._send_json({"servers": list(DATA["servers"].values())})
+        elif path == "/api/dms":
+            user = get_user(self)
+            if not user:
+                self._send_json({"error": "Login required"}, 401)
+                return
+            self._send_json({"messages": [message for message in DATA["directMessages"] if message["to"] == user["username"] or message["from"] == user["username"]]})
         elif path == "/api/team":
             team = [public_user(user) for user in DATA["users"].values() if user.get("role") == "staff" and not is_banned(user)]
             self._send_json({"team": team})
@@ -278,10 +297,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                     rooms.setdefault(presence["channelId"], []).append({"user": public_user(user), "muted": bool(presence.get("muted"))})
             self._send_json({"rooms": rooms})
         elif path == "/api/channels":
-            self._send_json({"channels": CHANNELS})
+            server = DATA["servers"].get(query.get("serverId", ["zorven"])[0])
+            self._send_json({"channels": server_channels(server) if server else []})
         elif path.startswith("/api/channels/") and path.endswith("/messages"):
             channel_id = path.split("/")[3]
-            messages = [message for message in DATA["messages"] if message["channelId"] == channel_id]
+            server_id = query.get("serverId", ["zorven"])[0]
+            messages = [message for message in DATA["messages"] if message["channelId"] == channel_id and message.get("serverId", "zorven") == server_id]
             self._send_json({"messages": messages[-100:]})
         elif path == "/download/zorven-client":
             self._send_download()
@@ -398,13 +419,29 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 return
             name = str(payload.get("name", server["name"])).strip()[:60]
             description = str(payload.get("description", server.get("description", ""))).strip()[:180]
+            channel_names = [str(item).strip()[:40] for item in str(payload.get("channels", "")).splitlines() if str(item).strip()]
+            role_names = [str(item).strip()[:40] for item in str(payload.get("roles", "")).splitlines() if str(item).strip()]
             if len(name) < 2:
                 self._send_json({"error": "Server name must be at least 2 characters"}, 400)
                 return
             server["name"] = name
             server["description"] = description
+            existing_channels = {channel["name"].lower(): channel for channel in server_channels(server)}
+            server["channels"] = [{"id": existing_channels.get(channel_name.lower(), {}).get("id", secrets.token_hex(5)), "name": channel_name, "description": existing_channels.get(channel_name.lower(), {}).get("description", "")} for channel_name in channel_names]
+            server["roles"] = role_names
             save_data()
             self._send_json({"server": server})
+        elif path.startswith("/api/servers/") and path.endswith("/review"):
+            user = get_user(self)
+            server_id = path.split("/")[3]
+            server = DATA["servers"].get(server_id)
+            if not user or not server or server.get("owner") != user.get("username"):
+                self._send_json({"error": "Only the server owner can request a review"}, 403)
+                return
+            if not any(review["serverId"] == server_id and review["status"] == "pending" for review in DATA["serverReviews"]):
+                DATA["serverReviews"].append({"serverId": server_id, "serverName": server["name"], "owner": user["username"], "status": "pending", "createdAt": int(time.time())})
+                save_data()
+            self._send_json({"requested": True})
         elif path == "/api/voice":
             user = get_user(self)
             if not user or is_banned(user):
@@ -507,7 +544,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Server name must be at least 2 characters"}, 400)
                 return
             server_id = secrets.token_urlsafe(8).replace("-", "").replace("_", "").lower()
-            server = {"id": server_id, "name": name, "description": "", "owner": owner["username"], "status": "active"}
+            server = {"id": server_id, "name": name, "description": "", "owner": owner["username"], "status": "active", "channels": [], "roles": []}
             DATA["servers"][server_id] = server
             save_data()
             self._send_json({"created": True, "server": server}, 201)
@@ -541,8 +578,29 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 save_data()
                 self._send_json({"cleared": True, "removed": removed})
                 return
+            if command == "clear_messages":
+                removed = len(DATA["messages"])
+                DATA["messages"] = []
+                save_data()
+                self._send_json({"cleared": True, "removed": removed})
+                return
+            if command == "delete_user":
+                username = str(args.get("username", "")).strip().lower()
+                if username in {"", actor["username"], "admin"} or username not in DATA["users"]:
+                    self._send_json({"error": "That account cannot be deleted"}, 400)
+                    return
+                del DATA["users"][username]
+                DATA["sessions"] = {token: name for token, name in DATA["sessions"].items() if name != username}
+                DATA["queue"] = [item for item in DATA["queue"] if item["username"] != username]
+                DATA["voice"].pop(username, None)
+                save_data()
+                self._send_json({"deleted": True, "username": username})
+                return
             if command == "export_data":
                 self._send_json({"export": {"users": [public_user(user) for user in DATA["users"].values()], "servers": list(DATA["servers"].values()), "messageCount": len(DATA["messages"]), "queueCount": len(DATA["queue"])}})
+                return
+            if command == "list_server_reviews":
+                self._send_json({"reviews": DATA["serverReviews"]})
                 return
 
             target = find_user(args.get("username"))
@@ -608,6 +666,10 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                     self._send_json({"error": "The main Zorven server cannot be deleted"}, 400)
                     return
                 deleted = DATA["servers"].pop(server_id)
+                DATA["serverReviews"] = [review for review in DATA["serverReviews"] if review["serverId"] != server_id]
+                owner = deleted.get("owner")
+                if owner and owner in DATA["users"]:
+                    DATA["directMessages"].append({"from": "zorven", "to": owner, "subject": "Community removed", "content": f"Your community server, {deleted['name']}, was removed by Zorven staff after review.", "createdAt": int(time.time()), "read": False})
                 save_data()
                 self._send_json({"deleted": True, "server": deleted})
             else:
@@ -640,12 +702,14 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "This account is banned"}, 403)
                 return
             channel_id = str(payload.get("channelId", "general"))
+            server_id = str(payload.get("serverId", "zorven"))
+            server = DATA["servers"].get(server_id)
             content = str(payload.get("content", "")).strip()
-            if channel_id not in {channel["id"] for channel in CHANNELS} or not content:
+            if not server or channel_id not in {channel["id"] for channel in server_channels(server)} or not content:
                 self._send_json({"error": "A valid channel and message are required"}, 400)
                 return
             identity = public_user(user)
-            message = {"id": secrets.token_hex(8), "channelId": channel_id, "username": user["username"], "role": identity["role"], "tag": identity["tag"], "badge": identity["badge"], "badgeColor": identity["badgeColor"], "content": content[:2000], "createdAt": int(time.time())}
+            message = {"id": secrets.token_hex(8), "serverId": server_id, "channelId": channel_id, "username": user["username"], "role": identity["role"], "tag": identity["tag"], "badge": identity["badge"], "badgeColor": identity["badgeColor"], "content": content[:2000], "createdAt": int(time.time())}
             DATA["messages"].append(message)
             save_data()
             self._send_json({"message": message}, 201)

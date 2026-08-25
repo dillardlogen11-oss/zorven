@@ -14,7 +14,7 @@
 <body>
   <main class="app-shell" aria-label="Zorven community chat">
     <aside class="rail" aria-label="Servers">
-      <button class="server-mark active" type="button" aria-label="Zorven Community">Z</button>
+      <div id="serverList" class="server-list"></div>
       <span class="rail-divider" aria-hidden="true"></span>
       <button class="server-mark add-server" type="button" aria-label="Create a server">+</button>
     </aside>
@@ -31,6 +31,7 @@
         <button type="button" data-server-action="boost"><span>&#9830;</span>Server Boost</button>
         <button type="button" data-server-action="invite"><span>&#128101;</span>Invite People</button>
         <button type="button" data-server-action="settings"><span>&#9881;</span>Server Settings</button>
+        <button type="button" data-server-action="review"><span>&#10003;</span>Request staff review</button>
         <button type="button" data-server-action="insights"><span>&#128202;</span>Server Insights</button>
         <button type="button" data-server-action="channel"><span>&#8853;</span>Create Channel</button>
         <button type="button" data-server-action="category"><span>&#8862;</span>Create Category</button>
@@ -105,6 +106,8 @@
       <h2>Overview</h2>
       <label>SERVER NAME<input id="serverSettingsName" minlength="2" maxlength="60" required autocomplete="off"></label>
       <label>DESCRIPTION<textarea id="serverDescriptionInput" maxlength="180" rows="3" placeholder="What is this server about?"></textarea></label>
+      <label>CHANNELS<textarea id="serverChannelsInput" rows="4" placeholder="One channel per line"></textarea></label>
+      <label>CUSTOM ROLES<textarea id="serverRolesInput" rows="4" placeholder="One role per line"></textarea></label>
       <p class="form-error" id="serverSettingsError" role="alert"></p>
       <button class="primary-button" value="default" type="submit">Save server</button>
     </form>
