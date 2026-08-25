@@ -299,7 +299,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Username already exists"}, 409)
                 return
             DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "member", "createdAt": int(time.time())}
-            save_data()
+            try:
+                save_data()
+            except OSError:
+                DATA["users"].pop(username, None)
+                self._send_json({"error": "Account storage is unavailable. Check the Render persistent disk and DATA_FILE setting."}, 503)
+                return
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
         elif path == "/api/auth/login":
             username = str(payload.get("username", "")).strip().lower()

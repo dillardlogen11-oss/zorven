@@ -341,6 +341,8 @@
     finally { elements.input.disabled = false; elements.input.focus(); }
   });
 
-  bootstrap();
+  bootstrap().then(() => {
+    if (new URLSearchParams(window.location.search).get("register") === "1") openAuth(true);
+  });
   window.setInterval(() => { if (document.visibilityState === "visible") { loadMessages(); loadVoice(); loadTeam(); } }, 15000);
 })();
