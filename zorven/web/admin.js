@@ -4,7 +4,7 @@
     loginGate: document.querySelector("#loginGate"), content: document.querySelector("#adminContent"), identity: document.querySelector("#adminIdentity"),
     username: document.querySelector("#adminUsername"), password: document.querySelector("#adminPassword"), loginButton: document.querySelector("#adminLoginButton"), loginError: document.querySelector("#loginError"),
     logoutButton: document.querySelector("#adminLogoutButton"), statsGrid: document.querySelector("#statsGrid"), usersTable: document.querySelector("#usersTable"), usersError: document.querySelector("#usersError"),
-    search: document.querySelector("#userSearch"), refresh: document.querySelector("#refreshUsers"), clearQueue: document.querySelector("#clearQueueButton"), exportData: document.querySelector("#exportDataButton"),
+    search: document.querySelector("#userSearch"), refresh: document.querySelector("#refreshUsers"), clearQueue: document.querySelector("#clearQueueButton"), exportData: document.querySelector("#exportDataButton"), maintenanceToggle: document.querySelector("#maintenanceToggle"), maintenanceStatus: document.querySelector("#maintenanceStatus"),
     toast: document.querySelector("#toast"),
   };
 
@@ -54,6 +54,9 @@
   function renderStats(stats) {
     const entries = [["Accounts", stats.users], ["Servers", stats.servers], ["Messages", stats.messages], ["Queued players", stats.queuedPlayers], ["Active sessions", stats.activeSessions]];
     elements.statsGrid.innerHTML = entries.map(([label, value]) => `<div class="admin-stat"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label.toUpperCase())}</span></div>`).join("");
+    elements.maintenanceToggle.textContent = stats.maintenanceMode ? "Disable maintenance" : "Enable maintenance";
+    elements.maintenanceStatus.textContent = stats.maintenanceMode ? "Visitors are seeing the maintenance page. The admin console remains available." : "The community website is available to visitors.";
+    elements.maintenanceToggle.classList.toggle("danger-button", stats.maintenanceMode);
   }
 
   function renderUsers() {
@@ -101,6 +104,11 @@
   async function loadStats() {
     try { renderStats((await command("internal_stats")).stats); } catch (error) { notify(error.message); }
   }
+
+  elements.maintenanceToggle.addEventListener("click", async () => {
+    const enabled = elements.maintenanceToggle.textContent.startsWith("Enable");
+    try { await command("toggle_maintenance", { enabled }); await loadStats(); notify(enabled ? "Maintenance mode enabled." : "Maintenance mode disabled."); } catch (error) { notify(error.message); }
+  });
 
   elements.clearQueue.addEventListener("click", async () => {
     try { const result = await command("clear_queue"); notify(`Cleared ${result.removed} queued players.`); await loadStats(); } catch (error) { notify(error.message); }

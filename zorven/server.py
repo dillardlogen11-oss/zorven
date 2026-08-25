@@ -38,6 +38,7 @@ def load_data():
 DATA = load_data()
 DATA.setdefault("messages", [])
 DATA.setdefault("voice", {})
+DATA.setdefault("maintenanceMode", False)
 DATA.setdefault("servers", {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}})
 for stored_server in DATA["servers"].values():
     stored_server.setdefault("description", "A Zorven community server.")
@@ -252,7 +253,10 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path != "/":
             path = path.rstrip("/")
-        if path == "/api/health":
+        maintenance_routes = {"/", "/index.html", "/login", "/login.html", "/server", "/server.html", "/app", "/app.html", "/home", "/account", "/zorven-server", "/zorven-account"}
+        if DATA.get("maintenanceMode") and path in maintenance_routes:
+            self._send_file("maintenance.html", "text/html; charset=utf-8")
+        elif path == "/api/health":
             self._send_json({"platform": "Zorven", "status": "online", "mode": "development"})
         elif path == "/api/games":
             self._send_json({"games": GAMES})
@@ -524,7 +528,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"servers": list(DATA["servers"].values())})
                 return
             if command == "internal_stats":
-                self._send_json({"stats": {"users": len(DATA["users"]), "servers": len(DATA["servers"]), "messages": len(DATA["messages"]), "queuedPlayers": len(DATA["queue"]), "activeSessions": len(DATA["sessions"]), "service": "online"}})
+                self._send_json({"stats": {"users": len(DATA["users"]), "servers": len(DATA["servers"]), "messages": len(DATA["messages"]), "queuedPlayers": len(DATA["queue"]), "activeSessions": len(DATA["sessions"]), "service": "online", "maintenanceMode": bool(DATA.get("maintenanceMode"))}})
+                return
+            if command == "toggle_maintenance":
+                DATA["maintenanceMode"] = bool(args.get("enabled"))
+                save_data()
+                self._send_json({"maintenanceMode": DATA["maintenanceMode"]})
                 return
             if command == "clear_queue":
                 removed = len(DATA["queue"])

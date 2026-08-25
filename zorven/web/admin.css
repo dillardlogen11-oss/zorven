@@ -10,6 +10,8 @@
 .admin-panel input { width: 100%; padding: 11px; border: 1px solid transparent; border-radius: 6px; background: #181d25; color: var(--ink); outline: 0; }
 .admin-panel input:focus { border-color: var(--accent); }
 .admin-panel-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.maintenance-panel .admin-panel-header { margin-bottom: 8px; }
+.danger-button { background: var(--danger); color: #fff; }
 .admin-panel-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .admin-panel-actions input { width: 180px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: #181d25; color: var(--ink); }
 .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 22px; }
