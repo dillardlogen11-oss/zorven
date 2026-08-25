@@ -1,4 +1,5 @@
 import os
+import tkinter as tk
 
 from zorven import desktop_app
 
@@ -21,3 +22,18 @@ def test_resolve_api_base_url_accepts_environment_override():
 
 def test_resolve_api_base_url_accepts_cli_override():
     assert desktop_app.resolve_api_base_url("", ["--host", "https://cdn.example.com"]) == "https://cdn.example.com"
+
+
+def test_main_falls_back_to_browser_for_headless_environment(monkeypatch, capsys):
+    opened = []
+
+    def raise_tcl_error():
+        raise tk.TclError("no display name and no $DISPLAY environment variable")
+
+    monkeypatch.setattr(desktop_app, "ZorvenChat", raise_tcl_error)
+    monkeypatch.setattr(desktop_app.webbrowser, "open", lambda url: opened.append(url) or True)
+
+    assert desktop_app.main() == 0
+    assert opened == [f"{desktop_app.API}/login"]
+    captured = capsys.readouterr()
+    assert captured.err == ""

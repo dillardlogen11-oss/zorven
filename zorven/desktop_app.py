@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import tkinter as tk
+import webbrowser
 from tkinter import messagebox, ttk
 from urllib import request
 
@@ -16,9 +17,8 @@ def resolve_api_base_url(default=DEFAULT_API, argv=None):
             if value in {"--host", "--api-url", "--base-url"} and index + 1 < len(argv):
                 override = argv[index + 1].strip()
                 break
-    if not override:
-        return default
-    return override.rstrip("/")
+    base_url = override or (default or DEFAULT_API)
+    return base_url.rstrip("/")
 
 
 API = resolve_api_base_url()
@@ -149,5 +149,26 @@ class ZorvenChat(tk.Tk):
         self.messages.config(state="disabled")
 
 
+def main():
+    try:
+        ZorvenChat().mainloop()
+        return 0
+    except tk.TclError as error:
+        if "display" in str(error).lower() or "no display" in str(error).lower():
+            login_url = f"{API}/login"
+            if webbrowser.open(login_url):
+                return 0
+            print(
+                "Zorven desktop app requires a graphical desktop session. "
+                "The browser version opened instead, or you can run the app on a machine with a display."
+                "\n"
+                f"Login URL: {login_url}\n"
+                f"Details: {error}",
+                file=sys.stderr,
+            )
+            return 1
+        raise
+
+
 if __name__ == "__main__":
-    ZorvenChat().mainloop()
+    raise SystemExit(main())

@@ -251,10 +251,8 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         elif path == "/download/zorven-client":
             self._send_download()
         elif path == "/":
-            self.send_response(302)
-            self.send_header("Location", "/login")
-            self.end_headers()
-        elif path in {"/server", "/zorven-server", "/account", "/zorven-account"}:
+            self._send_file("login.html", "text/html; charset=utf-8")
+        elif path in {"/server", "/zorven-server", "/account", "/zorven-account", "/app", "/home"}:
             self._send_file("index.html", "text/html; charset=utf-8")
         elif path in {"/login", "/zorven-login"}:
             self._send_file("login.html", "text/html; charset=utf-8")
