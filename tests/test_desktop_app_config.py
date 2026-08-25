@@ -37,3 +37,14 @@ def test_main_falls_back_to_browser_for_headless_environment(monkeypatch, capsys
     assert opened == [f"{desktop_app.API}/login"]
     captured = capsys.readouterr()
     assert captured.err == ""
+
+
+def test_resolve_web_route_handles_entry_points():
+    assert desktop_app.resolve_api_base_url("", []) == "http://127.0.0.1:8765"
+    from zorven.server import resolve_web_route
+
+    assert resolve_web_route("/") == "login.html"
+    assert resolve_web_route("/login") == "login.html"
+    assert resolve_web_route("/server") == "index.html"
+    assert resolve_web_route("/app") == "index.html"
+    assert resolve_web_route("/admin") == "admin.html"

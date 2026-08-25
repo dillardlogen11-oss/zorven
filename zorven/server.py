@@ -181,6 +181,32 @@ def can_manage_server(user, server):
     return user and server and (server.get("owner") == user["username"] or can_run(user, "manage_servers"))
 
 
+def resolve_web_route(path):
+    normalized = path or "/"
+    if normalized == "/":
+        return "login.html"
+    route_map = {
+        "/index.html": "index.html",
+        "/login": "login.html",
+        "/login.html": "login.html",
+        "/server": "index.html",
+        "/server.html": "index.html",
+        "/app": "index.html",
+        "/app.html": "index.html",
+        "/home": "index.html",
+        "/account": "index.html",
+        "/zorven-server": "index.html",
+        "/zorven-account": "index.html",
+        "/admin": "admin.html",
+        "/admin.html": "admin.html",
+        "/zorven-admin": "admin.html",
+        "/maintenance": "maintenance.html",
+        "/maintenance.html": "maintenance.html",
+        "/zorven-maintenance": "maintenance.html",
+    }
+    return route_map.get(normalized)
+
+
 class ZorvenHandler(BaseHTTPRequestHandler):
     def _send_json(self, payload, status=200):
         body = json.dumps(payload).encode("utf-8")
@@ -219,6 +245,9 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_HEAD(self):
+        self.do_GET()
+
     def do_GET(self):
         path = urlparse(self.path).path
         if path == "/api/health":
@@ -250,16 +279,18 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self._send_json({"messages": messages[-100:]})
         elif path == "/download/zorven-client":
             self._send_download()
-        elif path == "/":
+        elif path in {"/", "/index.html"}:
             self._send_file("login.html", "text/html; charset=utf-8")
         elif path in {"/server", "/zorven-server", "/account", "/zorven-account", "/app", "/home"}:
             self._send_file("index.html", "text/html; charset=utf-8")
-        elif path in {"/login", "/zorven-login"}:
+        elif path in {"/login", "/zorven-login", "/login.html"}:
             self._send_file("login.html", "text/html; charset=utf-8")
-        elif path in {"/admin", "/zorven-admin"}:
+        elif path in {"/admin", "/zorven-admin", "/admin.html"}:
             self._send_file("admin.html", "text/html; charset=utf-8")
-        elif path in {"/maintenance", "/zorven-maintenance"}:
+        elif path in {"/maintenance", "/zorven-maintenance", "/maintenance.html"}:
             self._send_file("maintenance.html", "text/html; charset=utf-8")
+        elif path in {"/server.html", "/app.html"}:
+            self._send_file("index.html", "text/html; charset=utf-8")
         elif path == "/app.js":
             self._send_file("app.js", "text/javascript; charset=utf-8")
         elif path == "/login.js":
