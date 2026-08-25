@@ -127,7 +127,17 @@ body { background: #232428; }
 .settings-nav-item:hover, .settings-nav-item.active { background: #3f4148; color: #fff; }
 .settings-main { position: relative; padding: 42px 48px; background: #313338; }
 .settings-main h2 { margin: 8px 0 24px; font-size: 25px; }
+.settings-section { padding: 18px 0 6px; border-top: 1px solid #41434a; }
+.settings-section-title { color: #b5bac1; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.settings-hint { margin: -12px 0 20px; color: #949ba4; font-size: 12px; }
+.settings-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #41434a; }
+.settings-actions span { color: #949ba4; font-size: 11px; }
+.server-settings-dialog { width: min(600px, calc(100% - 28px)); }
+.server-settings-dialog .dialog-card { gap: 10px; }
+.server-settings-dialog h2 { margin-bottom: 6px; font-size: 24px; }
+.server-settings-dialog label { margin: 8px 0; }
+.server-settings-dialog textarea { min-height: 84px; }
 .settings-profile { display: flex; align-items: center; gap: 13px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #41434a; }
 .settings-profile strong, .settings-profile span { display: block; }.settings-profile span { margin-top: 4px; color: #949ba4; font-size: 12px; }
 .settings-main label { display: grid; gap: 8px; margin: 16px 0; color: #b5bac1; }.settings-main input, .settings-main textarea { padding: 12px; border: 1px solid #1e1f22; border-radius: 3px; background: #1e1f22; color: var(--ink); outline: 0; }.settings-main input:focus, .settings-main textarea:focus { border-color: #00a8fc; }.settings-main .primary-button { width: 130px; margin-top: 8px; border-radius: 3px; background: #5865f2; }
-@media (max-width: 640px) { .settings-dialog .dialog-card { grid-template-columns: 1fr; }.settings-nav { padding: 20px 14px; }.settings-nav-item:nth-of-type(n+4), .settings-nav p:nth-of-type(2) { display: none; }.settings-main { padding: 30px 22px; } }
+@media (max-width: 640px) { .settings-dialog .dialog-card { grid-template-columns: 1fr; }.settings-nav { padding: 20px 14px; }.settings-nav-item:nth-of-type(n+4), .settings-nav p:nth-of-type(2) { display: none; }.settings-main { padding: 30px 22px; }.settings-actions { align-items: stretch; flex-direction: column; }.settings-actions .primary-button { width: 100%; } }

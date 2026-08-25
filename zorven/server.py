@@ -558,7 +558,8 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Server name must be at least 2 characters"}, 400)
                 return
             server_id = secrets.token_urlsafe(8).replace("-", "").replace("_", "").lower()
-            server = {"id": server_id, "name": name, "description": "", "owner": owner["username"], "status": "active", "channels": [], "roles": []}
+            description = str(payload.get("description", "")).strip()[:180]
+            server = {"id": server_id, "name": name, "description": description, "owner": owner["username"], "status": "active", "channels": [], "roles": []}
             DATA["servers"][server_id] = server
             save_data()
             self._send_json({"created": True, "server": server}, 201)

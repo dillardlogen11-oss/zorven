@@ -8,7 +8,7 @@
   const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [] };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
-    serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
+    serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
     staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), staffBadge: document.querySelector("#staffBadgeInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
     accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), settingsAvatar: document.querySelector("#settingsAvatar"), settingsName: document.querySelector("#settingsName"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
@@ -329,8 +329,8 @@
     event.preventDefault();
     if (event.submitter?.value === "cancel") return elements.serverDialog.close();
     try {
-      const result = await api("/api/servers", { method: "POST", body: JSON.stringify({ name: elements.serverName.value.trim() }) });
-      state.servers.push(result.server); elements.serverDialog.close(); elements.serverName.value = ""; await selectServer(result.server.id); notify(`${result.server.name} created.`);
+      const result = await api("/api/servers", { method: "POST", body: JSON.stringify({ name: elements.serverName.value.trim(), description: elements.serverCreateDescription.value.trim() }) });
+      state.servers.push(result.server); elements.serverDialog.close(); elements.serverName.value = ""; elements.serverCreateDescription.value = ""; await selectServer(result.server.id); notify(`${result.server.name} created.`);
     } catch (error) { elements.serverError.textContent = error.message; }
   });
 
@@ -347,7 +347,7 @@
     event.preventDefault();
     if (event.submitter?.value === "cancel") return elements.serverSettingsDialog.close();
     try {
-      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/settings`, { method: "POST", body: JSON.stringify({ name: elements.serverSettingsName.value, description: elements.serverDescription.value }) });
+      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/settings`, { method: "POST", body: JSON.stringify({ name: elements.serverSettingsName.value, description: elements.serverDescription.value, channels: elements.serverChannels.value, roles: elements.serverRoles.value }) });
       state.server = result.server; state.servers = state.servers.map(server => server.id === result.server.id ? result.server : server); state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(result.server.id)}`)).channels; renderServers(); document.querySelector(".server-name-button").firstChild.textContent = `${result.server.name} `; elements.serverSettingsDialog.close(); await selectChannel(state.channel); notify("Server settings saved.");
     } catch (error) { elements.serverSettingsError.textContent = error.message; }
   });

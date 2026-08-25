@@ -97,16 +97,17 @@
     <form method="dialog" class="dialog-card" id="accountForm">
       <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
       <aside class="settings-nav"><div class="settings-search">&#128269; <span>Search</span></div><p>ACCOUNT</p><button class="settings-nav-item active" type="button">&#128100; Account</button><button class="settings-nav-item" type="button">&#128274; Privacy & Safety</button><button class="settings-nav-item" type="button">&#128276; Notifications</button><p>APP SETTINGS</p><button class="settings-nav-item" type="button">&#127911; Voice & Video</button><button class="settings-nav-item" type="button">&#9881; Appearance</button></aside>
-      <section class="settings-main"><p class="eyebrow">ACCOUNT SETTINGS</p><h2>My account</h2><div class="settings-profile"><span class="avatar avatar-self" id="settingsAvatar">?</span><div><strong id="settingsName">Account</strong><span>Profile and security</span></div></div><label>DISPLAY NAME<input id="displayNameInput" maxlength="40" required autocomplete="nickname"></label><label>ABOUT ME<textarea id="bioInput" maxlength="190" rows="3" placeholder="Tell your community a little about yourself."></textarea></label><p class="settings-divider">PASSWORD AND AUTHENTICATION</p><label>CURRENT PASSWORD<input id="currentPasswordInput" type="password" autocomplete="current-password"></label><label>NEW PASSWORD<input id="newPasswordInput" type="password" minlength="8" autocomplete="new-password"></label><p class="form-error" id="accountError" role="alert"></p><button class="primary-button" value="default" type="submit">Save changes</button></section>
+      <section class="settings-main"><p class="eyebrow">ACCOUNT SETTINGS</p><h2>My account</h2><div class="settings-profile"><span class="avatar avatar-self" id="settingsAvatar">?</span><div><strong id="settingsName">Account</strong><span>Profile and security</span></div></div><div class="settings-section"><p class="settings-section-title">PROFILE</p><label>DISPLAY NAME<input id="displayNameInput" maxlength="40" required autocomplete="nickname"></label><label>ABOUT ME<textarea id="bioInput" maxlength="190" rows="3" placeholder="Tell your community a little about yourself."></textarea></label></div><div class="settings-section"><p class="settings-section-title">PASSWORD AND AUTHENTICATION</p><label>CURRENT PASSWORD<input id="currentPasswordInput" type="password" autocomplete="current-password"></label><label>NEW PASSWORD<input id="newPasswordInput" type="password" minlength="8" autocomplete="new-password"></label></div><p class="form-error" id="accountError" role="alert"></p><div class="settings-actions"><span>Changes save to your account immediately.</span><button class="primary-button" value="default" type="submit">Save changes</button></div></section>
     </form>
   </dialog>
 
-  <dialog id="serverSettingsDialog" class="dialog">
+  <dialog id="serverSettingsDialog" class="dialog server-settings-dialog">
     <form method="dialog" class="dialog-card" id="serverSettingsForm">
       <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
       <p class="eyebrow">SERVER SETTINGS</p>
-      <h2>Overview</h2>
+      <h2>Customize your server</h2>
       <label>SERVER NAME<input id="serverSettingsName" minlength="2" maxlength="60" required autocomplete="off"></label>
+      <p class="settings-hint">Only the server owner can change these settings.</p>
       <label>DESCRIPTION<textarea id="serverDescriptionInput" maxlength="180" rows="3" placeholder="What is this server about?"></textarea></label>
       <label>CHANNELS<textarea id="serverChannelsInput" rows="4" placeholder="One channel per line"></textarea></label>
       <label>CUSTOM ROLES<textarea id="serverRolesInput" rows="4" placeholder="One role per line"></textarea></label>
@@ -141,6 +142,7 @@
       <h2>Create a server</h2>
       <p class="dialog-copy">Start a focused space for your friends or team.</p>
       <label>SERVER NAME<input id="serverNameInput" minlength="2" maxlength="60" required autocomplete="off"></label>
+      <label>DESCRIPTION<textarea id="serverCreateDescriptionInput" maxlength="180" rows="3" placeholder="What is this server about?"></textarea></label>
       <p class="form-error" id="serverError" role="alert"></p>
       <button class="primary-button" value="default" type="submit">Create server</button>
     </form>
