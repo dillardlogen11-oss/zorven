@@ -22,11 +22,24 @@
     <aside class="channel-panel" id="channelPanel">
       <header class="community-header">
         <div>
-          <p class="eyebrow">COMMUNITY</p>
-          <h1>Zorven</h1>
+          <p class="eyebrow">SERVER</p>
+          <button class="server-name-button" id="serverMenuButton" type="button" aria-expanded="false">Zorven <span class="server-status-dot" aria-label="Online"></span><span class="server-chevron" aria-hidden="true">&#9662;</span></button>
         </div>
         <div class="community-actions"><button class="icon-button" id="serverSettingsButton" type="button" aria-label="Server settings">&#9881;</button><button class="icon-button" id="newServerButton" type="button" aria-label="Create server">+</button></div>
       </header>
+      <div class="server-menu" id="serverMenu" hidden>
+        <button type="button" data-server-action="boost"><span>&#9830;</span>Server Boost</button>
+        <button type="button" data-server-action="invite"><span>&#128101;</span>Invite People</button>
+        <button type="button" data-server-action="settings"><span>&#9881;</span>Server Settings</button>
+        <button type="button" data-server-action="insights"><span>&#128202;</span>Server Insights</button>
+        <button type="button" data-server-action="channel"><span>&#8853;</span>Create Channel</button>
+        <button type="button" data-server-action="category"><span>&#8862;</span>Create Category</button>
+        <div class="server-menu-divider"></div>
+        <button type="button" data-server-action="notifications"><span>&#128276;</span>Notification Settings</button>
+        <button type="button" data-server-action="privacy"><span>&#128274;</span>Privacy Settings</button>
+        <button type="button" data-server-action="nickname"><span>&#9998;</span>Change Nickname</button>
+        <button type="button" data-server-action="muted"><span>&#9633;</span>Hide Muted Channels</button>
+      </div>
       <nav class="channel-list" aria-label="Channels">
         <p class="section-label">TEXT CHANNELS</p>
         <div id="channelList"></div>
@@ -48,7 +61,7 @@
         <button class="mobile-menu icon-button" id="menuButton" type="button" aria-label="Open channels">&#9776;</button>
         <span class="hash">#</span>
         <div><h2 id="channelTitle">general</h2><p id="channelDescription">Loading channel...</p></div>
-        <div class="header-actions"><span class="online-dot"></span><span id="onlineCount">Community online</span></div>
+        <div class="header-actions"><button class="icon-button" type="button" aria-label="Notifications">&#128276;</button><button class="icon-button" type="button" aria-label="Pinned messages">&#128204;</button><span class="online-dot"></span><span id="onlineCount">Community online</span></div>
       </header>
       <div class="messages" id="messages" aria-live="polite"></div>
       <form class="composer" id="messageForm">
@@ -77,18 +90,11 @@
     </form>
   </dialog>
 
-  <dialog id="accountDialog" class="dialog">
+  <dialog id="accountDialog" class="dialog settings-dialog">
     <form method="dialog" class="dialog-card" id="accountForm">
       <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
-      <p class="eyebrow">ACCOUNT SETTINGS</p>
-      <h2>My profile</h2>
-      <label>DISPLAY NAME<input id="displayNameInput" maxlength="40" required autocomplete="nickname"></label>
-      <label>BIO<textarea id="bioInput" maxlength="190" rows="3" placeholder="Tell your community a little about yourself."></textarea></label>
-      <p class="settings-divider">CHANGE PASSWORD</p>
-      <label>CURRENT PASSWORD<input id="currentPasswordInput" type="password" autocomplete="current-password"></label>
-      <label>NEW PASSWORD<input id="newPasswordInput" type="password" minlength="8" autocomplete="new-password"></label>
-      <p class="form-error" id="accountError" role="alert"></p>
-      <button class="primary-button" value="default" type="submit">Save changes</button>
+      <aside class="settings-nav"><div class="settings-search">&#128269; <span>Search</span></div><p>ACCOUNT</p><button class="settings-nav-item active" type="button">&#128100; Account</button><button class="settings-nav-item" type="button">&#128274; Privacy & Safety</button><button class="settings-nav-item" type="button">&#128276; Notifications</button><p>APP SETTINGS</p><button class="settings-nav-item" type="button">&#127911; Voice & Video</button><button class="settings-nav-item" type="button">&#9881; Appearance</button></aside>
+      <section class="settings-main"><p class="eyebrow">ACCOUNT SETTINGS</p><h2>My account</h2><div class="settings-profile"><span class="avatar avatar-self" id="settingsAvatar">?</span><div><strong id="settingsName">Account</strong><span>Profile and security</span></div></div><label>DISPLAY NAME<input id="displayNameInput" maxlength="40" required autocomplete="nickname"></label><label>ABOUT ME<textarea id="bioInput" maxlength="190" rows="3" placeholder="Tell your community a little about yourself."></textarea></label><p class="settings-divider">PASSWORD AND AUTHENTICATION</p><label>CURRENT PASSWORD<input id="currentPasswordInput" type="password" autocomplete="current-password"></label><label>NEW PASSWORD<input id="newPasswordInput" type="password" minlength="8" autocomplete="new-password"></label><p class="form-error" id="accountError" role="alert"></p><button class="primary-button" value="default" type="submit">Save changes</button></section>
     </form>
   </dialog>
 
@@ -113,6 +119,7 @@
       <label id="setupKeyLabel">SETUP KEY<input id="setupKeyInput" type="password" autocomplete="off"></label>
       <label>USERNAME<input id="staffUsernameInput" minlength="3" maxlength="40" required autocomplete="username"></label>
       <label>PASSWORD<input id="staffPasswordInput" type="password" minlength="8" required autocomplete="new-password"></label>
+      <label>BADGE<select id="staffBadgeInput"><option value="founder">Founder</option><option value="builder">Tools</option><option value="guardian">Verified</option><option value="creator">Creator</option><option value="automation">Bot</option><option value="team">Star</option><option value="moderator">Party</option><option value="verified">Check</option><option value="diamond">Diamond</option><option value="fire">Fire</option><option value="star">Starburst</option><option value="tools">Hammer</option><option value="shield">Shield</option><option value="heart">Heart</option><option value="bolt">Bolt</option></select></label>
       <label class="checkbox-row" id="fullAccessLabel"><input id="fullAccessInput" type="checkbox" checked> GRANT ALL STAFF PERMISSIONS</label>
       <p class="form-error" id="staffError" role="alert"></p>
       <button class="primary-button" value="default" type="submit" id="staffSubmit">Create staff account</button>

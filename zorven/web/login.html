@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zorven | Login</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235865f2'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='sans-serif' font-size='36' font-weight='700' fill='white'%3EZ%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/login.css">
+</head>
+<body class="login-body">
+  <main class="login-shell">
+    <div class="login-orbit orbit-one"></div><div class="login-orbit orbit-two"></div>
+    <section class="login-card"><div class="login-copy"><div class="login-logo">Z</div><p class="eyebrow">ZORVEN COMMUNITY</p><h1>Welcome back!</h1><p>We are so excited to see you again.</p></div>
+      <form class="login-form" id="loginForm"><label>USERNAME<input id="loginUsername" minlength="3" maxlength="40" required autocomplete="username"></label><label>PASSWORD<input id="loginPassword" type="password" minlength="8" required autocomplete="current-password"></label><a href="/maintenance">Forgot your password?</a><p class="form-error" id="loginError" role="alert"></p><button class="primary-button" type="submit">Log In</button><p class="login-register">Need an account? <button id="registerButton" type="button">Register</button></p></form>
+    </section>
+  </main>
+  <script src="/login.js"></script>
+</body>
+</html>

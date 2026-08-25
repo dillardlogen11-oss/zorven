@@ -1,0 +1,17 @@
+.maintenance-body { min-height: 100vh; background: #111820; }
+.maintenance-shell { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 100vh; max-width: 1180px; margin: 0 auto; padding: 34px 34px 28px; overflow: hidden; }
+.maintenance-shell::before { position: absolute; top: 17%; right: -9%; width: min(520px, 60vw); aspect-ratio: 1; border: 1px solid #d6f24a35; border-radius: 50%; box-shadow: 0 0 0 28px #d6f24a08, 0 0 0 56px #d6f24a05; content: ""; }
+.maintenance-shell::after { position: absolute; right: 20%; bottom: 9%; width: 8px; height: 8px; border-radius: 50%; background: #d6f24a; box-shadow: 0 0 22px 4px #d6f24a; content: ""; }
+.maintenance-brand, .maintenance-content, .maintenance-shell footer { position: relative; z-index: 1; }
+.maintenance-brand { display: flex; align-items: center; gap: 10px; color: #edf2f7; font-size: 12px; font-weight: 700; letter-spacing: .16em; }
+.maintenance-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #d6f24a; color: #182000; font: 700 20px var(--display); }
+.maintenance-content { width: min(620px, 100%); margin: auto 0; padding: 70px 0 90px; animation: maintenance-in .55s ease both; }
+.maintenance-content h1 { max-width: 570px; margin: 12px 0 20px; font-size: clamp(42px, 7vw, 78px); line-height: .98; }
+.maintenance-copy { max-width: 510px; color: #aab5c2; font-size: 17px; line-height: 1.65; }
+.maintenance-status { display: inline-flex; align-items: center; gap: 9px; margin-top: 30px; padding: 10px 13px; border: 1px solid #34404d; border-radius: 5px; color: #dce4ed; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.maintenance-pulse { width: 8px; height: 8px; border-radius: 50%; background: #d6f24a; box-shadow: 0 0 0 5px #d6f24a20; }
+.maintenance-link { display: inline-block; margin-top: 28px; padding: 12px 16px; border-radius: 6px; background: #d6f24a; color: #182000; font-weight: 700; text-decoration: none; }
+.maintenance-link:hover { filter: brightness(1.08); }
+.maintenance-shell footer { color: #657181; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+@keyframes maintenance-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 560px) { .maintenance-shell { padding: 22px 20px 24px; }.maintenance-content { padding: 50px 0 70px; }.maintenance-content h1 { font-size: 48px; }.maintenance-copy { font-size: 15px; }.maintenance-shell::before { top: 29%; right: -44%; width: 430px; } }

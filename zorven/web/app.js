@@ -1,10 +1,16 @@
 (() => {
+  const BADGES = {
+    founder: ["✦", "#f5b942"], builder: ["⚒", "#c5ed59"], guardian: ["✓", "#53c878"], creator: ["◆", "#ffbd59"],
+    automation: ["◉", "#9b8cff"], team: ["★", "#57e0c0"], moderator: ["⌁", "#ff5f9d"], verified: ["✓", "#74e6a0"],
+    diamond: ["◇", "#e76cff"], fire: ["●", "#ff6d4a"], star: ["★", "#f7d35c"], tools: ["⚙", "#d8bd32"],
+    shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
+  };
   const state = { token: localStorage.getItem("zorven-token") || "", user: null, server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [] };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverError: document.querySelector("#serverError"),
-    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
-    accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
+    staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), staffBadge: document.querySelector("#staffBadgeInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
+    accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), settingsAvatar: document.querySelector("#settingsAvatar"), settingsName: document.querySelector("#settingsName"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
     channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
   };
@@ -41,11 +47,16 @@
     const roster = [...state.team];
     if (state.user && !roster.some(member => member.username === state.user.username)) roster.unshift(state.user);
     elements.memberList.innerHTML = roster.length
-      ? roster.map(member => `<div class="member"><span class="avatar">${escapeHtml(initials(member.username))}</span><span>${escapeHtml(member.displayName || member.username)}</span></div>`).join("")
+      ? roster.map(member => `<div class="member"><span class="avatar">${escapeHtml(initials(member.username))}</span><span class="member-details"><strong>${escapeHtml(member.displayName || member.username)}</strong><small>${member.role === "staff" ? badgeMarkup(member) : "Online"}</small></span></div>`).join("")
       : `<div class="member"><span class="avatar">Z</span><span>Zorven Team</span></div>`;
     const count = Math.max(roster.length, 1);
     elements.memberCount.textContent = count;
     elements.onlineCount.textContent = `${count} online`;
+  }
+
+  function badgeMarkup(user) {
+    const badge = BADGES[user.badge] || BADGES.member;
+    return `<span class="badge-icon badge-${escapeHtml(user.badge || "member")}" style="--badge-color:${escapeHtml(user.badgeColor || badge[1])}" title="${escapeHtml(user.tag || "Member")}" aria-label="${escapeHtml(user.tag || "Member")}">${badge[0]}</span>`;
   }
 
   async function loadTeam() {
@@ -111,7 +122,7 @@
   }
 
   function messageMarkup(message) {
-    const tag = message.role === "staff" ? `<span class="role-tag" style="--badge-color:${escapeHtml(message.badgeColor || "#d6f24a")}" aria-label="${escapeHtml(message.tag || "STAFF")} staff"><span class="staff-emblem" aria-hidden="true"><i></i><b></b></span><span>${escapeHtml(message.tag || "STAFF")}</span></span>` : "";
+    const tag = message.role === "staff" ? badgeMarkup(message) : "";
     return `<article class="message"><span class="avatar">${escapeHtml(initials(message.username))}</span><div><div class="message-meta"><strong>${escapeHtml(message.username)}</strong>${tag}<span class="message-time">${formatTime(message.createdAt)}</span></div><p class="message-body">${escapeHtml(message.content)}</p></div></article>`;
   }
 
@@ -192,6 +203,8 @@
   function openAccountSettings() {
     if (!state.user) return openAuth();
     elements.displayName.value = state.user.displayName || state.user.username;
+    elements.settingsAvatar.textContent = initials(state.user.username);
+    elements.settingsName.textContent = state.user.displayName || state.user.username;
     elements.bio.value = state.user.bio || "";
     elements.currentPassword.value = "";
     elements.newPassword.value = "";
@@ -212,6 +225,21 @@
   document.querySelector("#adminPanelButton").addEventListener("click", () => window.open("/admin", "_blank"));
   document.querySelector("#logoutButton").addEventListener("click", logout);
   document.querySelector("#serverSettingsButton").addEventListener("click", openServerSettings);
+  const serverMenuButton = document.querySelector("#serverMenuButton");
+  const serverMenu = document.querySelector("#serverMenu");
+  serverMenuButton.addEventListener("click", () => {
+    serverMenu.hidden = !serverMenu.hidden;
+    serverMenuButton.setAttribute("aria-expanded", String(!serverMenu.hidden));
+  });
+  serverMenu.addEventListener("click", event => {
+    const action = event.target.closest("[data-server-action]")?.dataset.serverAction;
+    if (!action) return;
+    serverMenu.hidden = true;
+    serverMenuButton.setAttribute("aria-expanded", "false");
+    if (action === "settings") return openServerSettings();
+    const labels = { boost: "Server Boost", invite: "Invite People", insights: "Server Insights", channel: "Create Channel", category: "Create Category", notifications: "Notification Settings", privacy: "Privacy Settings", nickname: "Change Nickname", muted: "Hide Muted Channels" };
+    notify(`${labels[action]} is ready to configure.`);
+  });
   document.querySelector("#newServerButton").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector(".add-server").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector("#menuButton").addEventListener("click", () => elements.panel.classList.toggle("open"));
@@ -291,7 +319,7 @@
     const payload = { username: elements.staffUsername.value.trim(), password: elements.staffPassword.value };
     try {
       if (state.user) {
-        const result = await api("/api/staff/accounts", { method: "POST", body: JSON.stringify({ ...payload, tag: "STAFF", color: "#c5ed59", fullAccess: elements.fullAccess.checked }) });
+        const result = await api("/api/staff/accounts", { method: "POST", body: JSON.stringify({ ...payload, tag: "STAFF", badge: elements.staffBadge.value, color: "#c5ed59", fullAccess: elements.fullAccess.checked }) });
         notify(`${result.user.username} is now staff.`);
       } else {
         const result = await api("/api/staff/bootstrap", { method: "POST", body: JSON.stringify({ ...payload, setupKey: elements.staffSetupKey.value }) });

@@ -68,12 +68,12 @@ CHANNELS = [
     {"id": "feedback", "name": "feedback", "description": "Help shape the game."},
 ]
 STAFF_PROFILES = {
-    "admin": {"tag": "FOUNDER", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
-    "staff": {"tag": "BUILDER", "color": "#c5ed59", "permissions": ["publish_updates", "moderate_chat"]},
-    "moderator": {"tag": "GUARDIAN", "color": "#78b7ff", "permissions": ["moderate_chat"]},
-    "zorven": {"tag": "CREATOR", "color": "#ed7d68", "permissions": ALL_PERMISSIONS},
-    "zorvenbot": {"tag": "AUTOMATION", "color": "#9b8cff", "permissions": ["publish_updates", "moderate_chat", "send_as_bot"]},
-    "zorven-team": {"tag": "ZORVEN TEAM", "color": "#57e0c0", "permissions": ALL_PERMISSIONS},
+    "admin": {"tag": "FOUNDER", "badge": "founder", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
+    "staff": {"tag": "BUILDER", "badge": "builder", "color": "#c5ed59", "permissions": ["publish_updates", "moderate_chat"]},
+    "moderator": {"tag": "GUARDIAN", "badge": "guardian", "color": "#78b7ff", "permissions": ["moderate_chat"]},
+    "zorven": {"tag": "CREATOR", "badge": "creator", "color": "#ed7d68", "permissions": ALL_PERMISSIONS},
+    "zorvenbot": {"tag": "AUTOMATION", "badge": "automation", "color": "#9b8cff", "permissions": ["publish_updates", "moderate_chat", "send_as_bot"]},
+    "zorven-team": {"tag": "ZORVEN TEAM", "badge": "team", "color": "#57e0c0", "permissions": ALL_PERMISSIONS},
 }
 
 STAFF_PROFILES["zorvenbot"] = {"tag": "AUTOMATION", "color": "#9b8cff", "permissions": ALL_PERMISSIONS}
@@ -109,7 +109,7 @@ def ensure_default_admin_account():
         "role": "admin",
         "displayName": "Admin",
         "bio": "Primary administrator",
-        "staffProfile": {"tag": "ADMIN", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
+        "staffProfile": {"tag": "ADMIN", "badge": "founder", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
         "createdAt": int(time.time()),
     }
     save_data()
@@ -141,15 +141,18 @@ def get_user(handler):
 
 def public_user(user):
     if user.get("username") == "admin" or user.get("role") == "admin":
-        profile = {"tag": "ADMIN", "color": "#f0b232", "permissions": ALL_PERMISSIONS}
+        profile = {"tag": "ADMIN", "badge": "founder", "color": "#f0b232", "permissions": ALL_PERMISSIONS}
     else:
         profile = user.get("staffProfile", {}) if user.get("role") == "staff" else {}
         if user.get("role") == "staff" and not profile:
             profile = STAFF_PROFILES.get(user.get("username"), {})
+        if user.get("role") == "staff" and not profile.get("badge"):
+            profile = {**profile, "badge": STAFF_PROFILES.get(user.get("username"), {}).get("badge", "member")}
     return {
         "username": user["username"],
         "role": user.get("role", "member"),
         "tag": profile.get("tag", "MEMBER"),
+        "badge": profile.get("badge", "member"),
         "badgeColor": profile.get("color", "#949ba4"),
         "displayName": user.get("displayName", user["username"]),
         "bio": user.get("bio", ""),
@@ -251,18 +254,28 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self.send_response(302)
             self.send_header("Location", "/login")
             self.end_headers()
-        elif path in {"/server", "/zorven-server", "/login", "/zorven-login", "/account", "/zorven-account"}:
+        elif path in {"/server", "/zorven-server", "/account", "/zorven-account"}:
             self._send_file("index.html", "text/html; charset=utf-8")
+        elif path in {"/login", "/zorven-login"}:
+            self._send_file("login.html", "text/html; charset=utf-8")
         elif path in {"/admin", "/zorven-admin"}:
             self._send_file("admin.html", "text/html; charset=utf-8")
+        elif path in {"/maintenance", "/zorven-maintenance"}:
+            self._send_file("maintenance.html", "text/html; charset=utf-8")
         elif path == "/app.js":
             self._send_file("app.js", "text/javascript; charset=utf-8")
+        elif path == "/login.js":
+            self._send_file("login.js", "text/javascript; charset=utf-8")
         elif path == "/admin.js":
             self._send_file("admin.js", "text/javascript; charset=utf-8")
         elif path == "/admin.css":
             self._send_file("admin.css", "text/css; charset=utf-8")
+        elif path == "/maintenance.css":
+            self._send_file("maintenance.css", "text/css; charset=utf-8")
         elif path == "/styles.css":
             self._send_file("styles.css", "text/css; charset=utf-8")
+        elif path == "/login.css":
+            self._send_file("login.css", "text/css; charset=utf-8")
         elif path == "/discord.css":
             self._send_file("discord.css", "text/css; charset=utf-8")
         else:
@@ -429,6 +442,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             username = str(payload.get("username", "")).strip().lower()
             password = str(payload.get("password", ""))
             tag = str(payload.get("tag", "CREW")).strip()[:20].upper()
+            badge = str(payload.get("badge", "member")).strip()[:20]
             color = str(payload.get("color", "#c5ed59")).strip()
             permissions = ALL_PERMISSIONS if bool(payload.get("fullAccess")) else ["publish_updates", "moderate_chat"]
             if bool(payload.get("fullAccess")) and not has_full_access(creator):
@@ -440,7 +454,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             if username in DATA["users"]:
                 self._send_json({"error": "Username already exists"}, 409)
                 return
-            DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": {"tag": tag, "color": color, "permissions": permissions}, "createdAt": int(time.time())}
+            DATA["users"][username] = {"username": username, "password": hash_password(password), "role": "staff", "staffProfile": {"tag": tag, "badge": badge, "color": color, "permissions": permissions}, "createdAt": int(time.time())}
             save_data()
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
         elif path == "/api/servers":
@@ -586,7 +600,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "A valid channel and message are required"}, 400)
                 return
             identity = public_user(user)
-            message = {"id": secrets.token_hex(8), "channelId": channel_id, "username": user["username"], "role": identity["role"], "tag": identity["tag"], "badgeColor": identity["badgeColor"], "content": content[:2000], "createdAt": int(time.time())}
+            message = {"id": secrets.token_hex(8), "channelId": channel_id, "username": user["username"], "role": identity["role"], "tag": identity["tag"], "badge": identity["badge"], "badgeColor": identity["badgeColor"], "content": content[:2000], "createdAt": int(time.time())}
             DATA["messages"].append(message)
             save_data()
             self._send_json({"message": message}, 201)

@@ -11,7 +11,8 @@ Requires Python 3.10 or newer. From the repository root:
 python3 zorven/server.py
 ```
 
-Open `http://127.0.0.1:8765/login` in a browser. On Windows, run
+Open `http://127.0.0.1:8765/login` in a browser. The custom maintenance page is
+available at `http://127.0.0.1:8765/maintenance`. On Windows, run
 `zorven/start_zorven.bat` instead.
 
 ## Desktop and mobile app notes
@@ -43,7 +44,9 @@ python3 -m py_compile zorven/server.py zorven/desktop_app.py
 ```
 
 Then verify registration, login, sending a message in each channel, mobile
-navigation, and the staff moderation flow with staging accounts. See
+navigation, and the staff moderation flow with stagicd /workspaces/zorven
+export SETUP_KEY='Zorven-Setup-2026-Alpha-7f9d2c1e-Q7R9xM2k'
+python3 zorven/server.pyg accounts. See
 `zorven/RELEASE_NOTES.md` for the infrastructure required before a public
 internet deployment.
 
