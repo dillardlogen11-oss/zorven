@@ -11,7 +11,9 @@
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
     staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), staffBadge: document.querySelector("#staffBadgeInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
     accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), settingsAvatar: document.querySelector("#settingsAvatar"), settingsName: document.querySelector("#settingsName"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
-    serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
+    serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverCategories: document.querySelector("#serverCategoriesInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
+    createChannelDialog: document.querySelector("#createChannelDialog"), createChannelForm: document.querySelector("#createChannelForm"), channelName: document.querySelector("#channelNameInput"), channelDescription: document.querySelector("#channelDescriptionInput"), channelCreateError: document.querySelector("#channelCreateError"),
+    createCategoryDialog: document.querySelector("#createCategoryDialog"), createCategoryForm: document.querySelector("#createCategoryForm"), categoryName: document.querySelector("#categoryNameInput"), categoryCreateError: document.querySelector("#categoryCreateError"),
     serverList: document.querySelector("#serverList"), directMessagesButton: document.querySelector("#directMessagesButton"), directMessagesDialog: document.querySelector("#directMessagesDialog"), directMessagesList: document.querySelector("#directMessagesList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
   };
   async function api(path, options = {}) {
@@ -254,7 +256,25 @@
     if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
     elements.serverSettingsName.value = state.server?.name || "";
     elements.serverDescription.value = state.server?.description || "";
+    elements.serverCategories.value = (state.server?.categories || []).join("\n");
     elements.serverChannels.value = (state.server?.channels || []).map(channel => channel.name).join("\n");
+      function openCreateChannel() {
+        if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
+        elements.channelName.value = "";
+        elements.channelDescription.value = "";
+        elements.channelCreateError.textContent = "";
+        elements.createChannelDialog.showModal();
+        elements.channelName.focus();
+      }
+
+      function openCreateCategory() {
+        if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
+        elements.categoryName.value = "";
+        elements.categoryCreateError.textContent = "";
+        elements.createCategoryDialog.showModal();
+        elements.categoryName.focus();
+      }
+
     elements.serverRoles.value = (state.server?.roles || []).join("\n");
     elements.serverSettingsError.textContent = "";
     elements.serverSettingsDialog.showModal();
@@ -283,7 +303,8 @@
       try { await api(`/api/servers/${encodeURIComponent(state.server.id)}/review`, { method: "POST" }); notify("Staff review requested."); } catch (error) { notify(error.message); }
       return;
     }
-    if (action === "channel" || action === "category") return openServerSettings();
+    if (action === "channel") return openCreateChannel();
+    if (action === "category") return openCreateCategory();
     if (action === "invite") {
       try { await navigator.clipboard.writeText(window.location.href); notify("Server invite link copied."); } catch { notify("Copy the page link to invite people."); }
       return;
@@ -358,9 +379,37 @@
     event.preventDefault();
     if (event.submitter?.value === "cancel") return elements.serverSettingsDialog.close();
     try {
-      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/settings`, { method: "POST", body: JSON.stringify({ name: elements.serverSettingsName.value, description: elements.serverDescription.value, channels: elements.serverChannels.value, roles: elements.serverRoles.value }) });
+      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/settings`, { method: "POST", body: JSON.stringify({ name: elements.serverSettingsName.value, description: elements.serverDescription.value, categories: elements.serverCategories.value, channels: elements.serverChannels.value, roles: elements.serverRoles.value }) });
       state.server = result.server; state.servers = state.servers.map(server => server.id === result.server.id ? result.server : server); state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(result.server.id)}`)).channels; renderServers(); document.querySelector(".server-name-button").firstChild.textContent = `${result.server.name} `; elements.serverSettingsDialog.close(); await selectChannel(state.channel); notify("Server settings saved.");
     } catch (error) { elements.serverSettingsError.textContent = error.message; }
+  });
+
+  elements.createChannelForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") return elements.createChannelDialog.close();
+    elements.channelCreateError.textContent = "";
+    try {
+      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/channels`, { method: "POST", body: JSON.stringify({ name: elements.channelName.value.trim(), description: elements.channelDescription.value.trim() }) });
+      state.server = result.server;
+      state.servers = state.servers.map(server => server.id === result.server.id ? result.server : server);
+      state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(result.server.id)}`)).channels;
+      elements.createChannelDialog.close();
+      await selectChannel(result.channel.id);
+      notify(`Channel #${result.channel.name} created.`);
+    } catch (error) { elements.channelCreateError.textContent = error.message; }
+  });
+
+  elements.createCategoryForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") return elements.createCategoryDialog.close();
+    elements.categoryCreateError.textContent = "";
+    try {
+      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/categories`, { method: "POST", body: JSON.stringify({ name: elements.categoryName.value.trim() }) });
+      state.server = result.server;
+      state.servers = state.servers.map(server => server.id === result.server.id ? result.server : server);
+      elements.createCategoryDialog.close();
+      notify(`Category ${result.category} created.`);
+    } catch (error) { elements.categoryCreateError.textContent = error.message; }
   });
 
   elements.staffForm.addEventListener("submit", async event => {

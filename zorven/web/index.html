@@ -109,6 +109,7 @@
       <label>SERVER NAME<input id="serverSettingsName" minlength="2" maxlength="60" required autocomplete="off"></label>
       <p class="settings-hint">Only the server owner can change these settings.</p>
       <label>DESCRIPTION<textarea id="serverDescriptionInput" maxlength="180" rows="3" placeholder="What is this server about?"></textarea></label>
+      <label>CATEGORIES<textarea id="serverCategoriesInput" rows="3" placeholder="One category per line"></textarea></label>
       <label>CHANNELS<textarea id="serverChannelsInput" rows="4" placeholder="One channel per line"></textarea></label>
       <label>CUSTOM ROLES<textarea id="serverRolesInput" rows="4" placeholder="One role per line"></textarea></label>
       <p class="form-error" id="serverSettingsError" role="alert"></p>
@@ -154,6 +155,29 @@
       <p class="eyebrow">ZORVEN INBOX</p>
       <h2>Direct messages</h2>
       <div id="directMessagesList" class="direct-messages-list"></div>
+    </form>
+  </dialog>
+
+  <dialog id="createChannelDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="createChannelForm">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow">SERVER MENU</p>
+      <h2>Create channel</h2>
+      <label>CHANNEL NAME<input id="channelNameInput" minlength="2" maxlength="40" required autocomplete="off"></label>
+      <label>DESCRIPTION<textarea id="channelDescriptionInput" maxlength="120" rows="3" placeholder="Optional channel description"></textarea></label>
+      <p class="form-error" id="channelCreateError" role="alert"></p>
+      <button class="primary-button" value="default" type="submit">Create channel</button>
+    </form>
+  </dialog>
+
+  <dialog id="createCategoryDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="createCategoryForm">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow">SERVER MENU</p>
+      <h2>Create category</h2>
+      <label>CATEGORY NAME<input id="categoryNameInput" minlength="2" maxlength="40" required autocomplete="off"></label>
+      <p class="form-error" id="categoryCreateError" role="alert"></p>
+      <button class="primary-button" value="default" type="submit">Create category</button>
     </form>
   </dialog>
 

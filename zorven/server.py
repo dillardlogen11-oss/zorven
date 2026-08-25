@@ -78,6 +78,7 @@ def server_channels(server):
 for stored_server in DATA["servers"].values():
     stored_server.setdefault("channels", CHANNELS.copy() if stored_server.get("id") == "zorven" else [])
     stored_server.setdefault("roles", [])
+    stored_server.setdefault("categories", [])
 
 STAFF_PROFILES = {
     "admin": {"tag": "FOUNDER", "badge": "founder", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
@@ -435,6 +436,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             description = str(payload.get("description", server.get("description", ""))).strip()[:180]
             channel_names = [str(item).strip()[:40] for item in str(payload.get("channels", "")).splitlines() if str(item).strip()]
             role_names = [str(item).strip()[:40] for item in str(payload.get("roles", "")).splitlines() if str(item).strip()]
+            category_names = [str(item).strip()[:40] for item in str(payload.get("categories", "")).splitlines() if str(item).strip()]
             if len(name) < 2:
                 self._send_json({"error": "Server name must be at least 2 characters"}, 400)
                 return
@@ -443,8 +445,44 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             existing_channels = {channel["name"].lower(): channel for channel in server_channels(server)}
             server["channels"] = [{"id": existing_channels.get(channel_name.lower(), {}).get("id", secrets.token_hex(5)), "name": channel_name, "description": existing_channels.get(channel_name.lower(), {}).get("description", "")} for channel_name in channel_names]
             server["roles"] = role_names
+            server["categories"] = category_names
             save_data()
             self._send_json({"server": server})
+        elif path.startswith("/api/servers/") and path.endswith("/channels"):
+            user = get_user(self)
+            server_id = path.split("/")[3]
+            server = DATA["servers"].get(server_id)
+            if not can_manage_server(user, server):
+                self._send_json({"error": "Only the server owner can create channels"}, 403)
+                return
+            name = str(payload.get("name", "")).strip()[:40]
+            if len(name) < 2:
+                self._send_json({"error": "Channel name must be at least 2 characters"}, 400)
+                return
+            if any(channel["name"].lower() == name.lower() for channel in server_channels(server)):
+                self._send_json({"error": "That channel already exists"}, 409)
+                return
+            channel = {"id": secrets.token_hex(5), "name": name, "description": str(payload.get("description", "")).strip()[:120]}
+            server.setdefault("channels", []).append(channel)
+            save_data()
+            self._send_json({"channel": channel, "server": server}, 201)
+        elif path.startswith("/api/servers/") and path.endswith("/categories"):
+            user = get_user(self)
+            server_id = path.split("/")[3]
+            server = DATA["servers"].get(server_id)
+            if not can_manage_server(user, server):
+                self._send_json({"error": "Only the server owner can create categories"}, 403)
+                return
+            name = str(payload.get("name", "")).strip()[:40]
+            if len(name) < 2:
+                self._send_json({"error": "Category name must be at least 2 characters"}, 400)
+                return
+            if any(category.lower() == name.lower() for category in server.get("categories", [])):
+                self._send_json({"error": "That category already exists"}, 409)
+                return
+            server.setdefault("categories", []).append(name)
+            save_data()
+            self._send_json({"category": name, "server": server}, 201)
         elif path.startswith("/api/servers/") and path.endswith("/review"):
             user = get_user(self)
             server_id = path.split("/")[3]
@@ -559,7 +597,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 return
             server_id = secrets.token_urlsafe(8).replace("-", "").replace("_", "").lower()
             description = str(payload.get("description", "")).strip()[:180]
-            server = {"id": server_id, "name": name, "description": description, "owner": owner["username"], "status": "active", "channels": [], "roles": []}
+            server = {"id": server_id, "name": name, "description": description, "owner": owner["username"], "status": "active", "channels": [], "roles": [], "categories": []}
             DATA["servers"][server_id] = server
             save_data()
             self._send_json({"created": True, "server": server}, 201)
