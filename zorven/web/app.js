@@ -5,7 +5,7 @@
     diamond: ["◇", "#e76cff"], fire: ["●", "#ff6d4a"], star: ["★", "#f7d35c"], tools: ["⚙", "#d8bd32"],
     shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
   };
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [] };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
@@ -91,7 +91,8 @@
   }
 
   function renderChannels() {
-    elements.channelList.innerHTML = state.channels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("");
+    const visibleChannels = state.hideMutedChannels ? state.channels.filter(channel => !channel.muted) : state.channels;
+    elements.channelList.innerHTML = visibleChannels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("");
     document.querySelectorAll("[data-channel]").forEach(button => button.addEventListener("click", () => selectChannel(button.dataset.channel)));
   }
 
@@ -309,8 +310,46 @@
       try { await navigator.clipboard.writeText(window.location.href); notify("Server invite link copied."); } catch { notify("Copy the page link to invite people."); }
       return;
     }
-    const labels = { boost: "Server Boost", insights: "Server Insights", notifications: "Notification Settings", privacy: "Privacy Settings", nickname: "Change Nickname", muted: "Hide Muted Channels" };
-    notify(`${labels[action]} is ready to configure.`);
+    if (action === "insights") {
+      const categories = (state.server?.categories || []).length;
+      const roles = (state.server?.roles || []).length;
+      notify(`Insights: ${state.channels.length} channels, ${categories} categories, ${roles} roles.`);
+      return;
+    }
+    if (action === "notifications") {
+      const key = `zorven-notifications-${state.server?.id}`;
+      const next = localStorage.getItem(key) !== "off" ? "off" : "on";
+      localStorage.setItem(key, next);
+      notify(`Notifications ${next === "on" ? "enabled" : "muted"} for this server.`);
+      return;
+    }
+    if (action === "privacy") {
+      return openServerSettings();
+    }
+    if (action === "nickname") {
+      if (!state.user) return openAuth();
+      const nickname = (window.prompt("Set your display name for this account", state.user.displayName || state.user.username) || "").trim();
+      if (!nickname) return;
+      try {
+        const result = await api("/api/account/settings", { method: "POST", body: JSON.stringify({ displayName: nickname, bio: state.user.bio || "" }) });
+        state.user = result.user;
+        renderIdentity();
+        notify("Display name updated.");
+      } catch (error) { notify(error.message); }
+      return;
+    }
+    if (action === "muted") {
+      state.hideMutedChannels = !state.hideMutedChannels;
+      renderChannels();
+      notify(state.hideMutedChannels ? "Muted channels are now hidden." : "Muted channels are now visible.");
+      return;
+    }
+    if (action === "boost") {
+      const boosted = localStorage.getItem(`zorven-boost-${state.server?.id}`) === "true";
+      localStorage.setItem(`zorven-boost-${state.server?.id}`, boosted ? "false" : "true");
+      notify(boosted ? "Server boost removed." : "Server boost enabled.");
+      return;
+    }
   });
   document.querySelector("#newServerButton").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector(".add-server").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
