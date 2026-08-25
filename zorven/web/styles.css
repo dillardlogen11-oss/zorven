@@ -84,6 +84,8 @@ body { background: #232428; }
 .welcome { padding: 70px 0 28px; }
 .welcome-mark { width: 54px; height: 54px; border-radius: 16px; background: #5865f2; color: #fff; }
 .welcome h3 { font-size: 25px; }
+.empty-server { max-width: 460px; margin: auto; padding-top: 0; text-align: center; }
+.empty-server .welcome-mark { margin: 0 auto 14px; }
 .message { padding: 11px 10px; margin: 2px -10px; border-radius: 4px; }
 .message:hover { background: #35373c; }
 .message-body { color: #d4cbd9; }

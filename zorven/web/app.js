@@ -64,6 +64,7 @@
     document.querySelector(".server-name-button").firstChild.textContent = `${server.name} `;
     renderServers();
     state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(server.id)}`)).channels;
+    state.channel = state.channels.some(channel => channel.id === state.channel) ? state.channel : state.channels[0]?.id || "";
     await selectChannel(state.channel);
   }
 
@@ -137,9 +138,10 @@
   async function selectChannel(channelId) {
     state.channel = channelId;
     const channel = state.channels.find(item => item.id === channelId);
-    elements.title.textContent = channel?.name || channelId;
-    elements.description.textContent = channel?.description || "Community conversation.";
-    elements.input.placeholder = `Message #${channel?.name || channelId}`;
+    elements.title.textContent = channel?.name || "No channels yet";
+    elements.description.textContent = channel?.description || "Open Server Settings to add your first channel.";
+    elements.input.placeholder = channel ? `Message #${channel.name}` : "Add a channel in Server Settings";
+    elements.input.disabled = !channel;
     elements.panel.classList.remove("open");
     renderChannels();
     await loadMessages();
@@ -151,6 +153,10 @@
   }
 
   async function loadMessages() {
+    if (!state.channel) {
+      elements.messages.innerHTML = `<section class="welcome empty-server"><div class="welcome-mark">+</div><h3>This server is ready for you</h3><p>Add channels and roles in Server Settings to get started.</p></section>`;
+      return;
+    }
     elements.messages.innerHTML = `<section class="welcome"><div class="welcome-mark">#</div><h3>Welcome to #${escapeHtml(elements.title.textContent)}</h3><p>This is the start of the ${escapeHtml(elements.title.textContent)} channel.</p></section>`;
     try {
       const { messages } = await api(`/api/channels/${encodeURIComponent(state.channel)}/messages?serverId=${encodeURIComponent(state.server?.id || "zorven")}`);
@@ -277,7 +283,12 @@
       try { await api(`/api/servers/${encodeURIComponent(state.server.id)}/review`, { method: "POST" }); notify("Staff review requested."); } catch (error) { notify(error.message); }
       return;
     }
-    const labels = { boost: "Server Boost", invite: "Invite People", insights: "Server Insights", channel: "Create Channel", category: "Create Category", notifications: "Notification Settings", privacy: "Privacy Settings", nickname: "Change Nickname", muted: "Hide Muted Channels" };
+    if (action === "channel" || action === "category") return openServerSettings();
+    if (action === "invite") {
+      try { await navigator.clipboard.writeText(window.location.href); notify("Server invite link copied."); } catch { notify("Copy the page link to invite people."); }
+      return;
+    }
+    const labels = { boost: "Server Boost", insights: "Server Insights", notifications: "Notification Settings", privacy: "Privacy Settings", nickname: "Change Nickname", muted: "Hide Muted Channels" };
     notify(`${labels[action]} is ready to configure.`);
   });
   document.querySelector("#newServerButton").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
