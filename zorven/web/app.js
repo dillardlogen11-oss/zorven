@@ -12,7 +12,7 @@
     staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), staffBadge: document.querySelector("#staffBadgeInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
     accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), settingsAvatar: document.querySelector("#settingsAvatar"), settingsName: document.querySelector("#settingsName"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
-    serverList: document.querySelector("#serverList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
+    serverList: document.querySelector("#serverList"), directMessagesButton: document.querySelector("#directMessagesButton"), directMessagesDialog: document.querySelector("#directMessagesDialog"), directMessagesList: document.querySelector("#directMessagesList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
   };
   async function api(path, options = {}) {
     const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) };
@@ -29,6 +29,16 @@
   function escapeHtml(value) { const node = document.createElement("span"); node.textContent = value; return node.innerHTML; }
   function formatTime(timestamp) { return timestamp ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(timestamp * 1000)) : "now"; }
   function notify(message) { elements.toast.textContent = message; elements.toast.classList.add("show"); window.clearTimeout(notify.timer); notify.timer = window.setTimeout(() => elements.toast.classList.remove("show"), 3200); }
+
+  async function openDirectMessages() {
+    if (!state.user) return openAuth();
+    try {
+      const messages = (await api("/api/dms")).messages;
+      elements.directMessagesList.innerHTML = messages.length ? messages.map(message => `<article class="direct-message"><strong>${escapeHtml(message.from === state.user.username ? `To ${message.to}` : `From ${message.from}`)}</strong><small>${formatTime(message.createdAt)}</small><p>${escapeHtml(message.content)}</p></article>`).join("") : `<p class="dialog-copy">No direct messages yet.</p>`;
+      elements.directMessagesDialog.showModal();
+      await api("/api/dms/read", { method: "POST" });
+    } catch (error) { notify(error.message); }
+  }
 
   function renderIdentity() {
     const user = state.user;
@@ -245,6 +255,7 @@
   }
 
   document.querySelector("#accountButton").addEventListener("click", openAccountSettings);
+  elements.directMessagesButton.addEventListener("click", openDirectMessages);
   document.querySelector("#staffPanelButton").addEventListener("click", openStaffPanel);
   document.querySelector("#adminPanelButton").addEventListener("click", () => window.open("/admin", "_blank"));
   document.querySelector("#logoutButton").addEventListener("click", logout);

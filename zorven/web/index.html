@@ -14,6 +14,8 @@
 <body>
   <main class="app-shell" aria-label="Zorven community chat">
     <aside class="rail" aria-label="Servers">
+      <button class="home-mark" id="directMessagesButton" type="button" aria-label="Direct messages">Z</button>
+      <span class="rail-divider" aria-hidden="true"></span>
       <div id="serverList" class="server-list"></div>
       <span class="rail-divider" aria-hidden="true"></span>
       <button class="server-mark add-server" type="button" aria-label="Create a server">+</button>
@@ -141,6 +143,15 @@
       <label>SERVER NAME<input id="serverNameInput" minlength="2" maxlength="60" required autocomplete="off"></label>
       <p class="form-error" id="serverError" role="alert"></p>
       <button class="primary-button" value="default" type="submit">Create server</button>
+    </form>
+  </dialog>
+
+  <dialog id="directMessagesDialog" class="dialog direct-messages-dialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
+      <p class="eyebrow">ZORVEN INBOX</p>
+      <h2>Direct messages</h2>
+      <div id="directMessagesList" class="direct-messages-list"></div>
     </form>
   </dialog>
 

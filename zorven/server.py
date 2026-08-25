@@ -346,7 +346,17 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Invalid JSON"}, 400)
             return
 
-        if path == "/api/auth/register":
+        if path == "/api/dms/read":
+            user = get_user(self)
+            if not user:
+                self._send_json({"error": "Login required"}, 401)
+                return
+            for message in DATA["directMessages"]:
+                if message["to"] == user["username"]:
+                    message["read"] = True
+            save_data()
+            self._send_json({"read": True})
+        elif path == "/api/auth/register":
             username = str(payload.get("username", "")).strip().lower()
             password = str(payload.get("password", ""))
             if len(username) < 3 or len(password) < 8:
