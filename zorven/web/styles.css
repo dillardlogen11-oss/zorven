@@ -55,10 +55,16 @@ h1 { font-size: 23px; }.icon-button { border: 0; background: transparent; color:
 /* Discord-inspired density and profile surfaces. */
 :root { --panel-deep: #232428; --rail: #1e1f22; --panel: #313338; --line: #41434a; --accent: #5865f2; --accent-ink: #fff; --muted: #a7aab0; --font: "DM Sans", sans-serif; --display: "Space Grotesk", sans-serif; }
 body { background: #232428; }
-.app-shell { grid-template-columns: 72px 250px minmax(0, 1fr) 230px; }
-.rail { gap: 12px; padding-top: 18px; background: #1e1f22; }
-.server-mark { width: 44px; height: 44px; border-radius: 50%; background: #313338; transition: border-radius .18s ease, background .18s ease; }
+.app-shell { grid-template-columns: 64px 250px minmax(0, 1fr) 230px; }
+.rail { gap: 10px; padding-top: 12px; background: #1e1f22; }
+.server-list { gap: 8px; }
+.server-mark { position: relative; width: 42px; height: 42px; border-radius: 50%; background: #313338; font-size: 17px; transition: border-radius .18s ease, background .18s ease, transform .18s ease; }
 .server-mark:hover, .server-mark.active { border-radius: 14px; background: #5865f2; color: #fff; }
+.server-mark:hover { transform: translateY(-1px); }
+.server-mark.active::before, .server-mark:hover::before { position: absolute; left: -11px; width: 4px; height: 22px; border-radius: 0 4px 4px 0; background: #fff; content: ""; }
+.server-mark.active::before { height: 32px; }
+.add-server { color: #57f287; background: #313338; }
+.add-server:hover { background: #57f287; color: #fff; }
 .channel-panel, .members-panel { background: #2b2d31; }
 .community-header, .chat-header { min-height: 68px; border-color: #202225; }
 .community-header { padding: 0 18px; }
@@ -99,12 +105,12 @@ body { background: #232428; }
 
 .server-name-button { display: flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: var(--ink); font: 700 19px var(--display); }
 .server-name-button:hover { color: #fff; }.server-chevron { color: #b5bac1; font-size: 11px; }
-.server-menu { position: absolute; z-index: 5; top: 57px; left: 78px; width: 224px; padding: 7px; border: 1px solid #1e1f22; border-radius: 4px; background: #18191c; box-shadow: 0 10px 22px #0008; }
-.server-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; border: 0; border-radius: 3px; background: transparent; color: #dbdee1; text-align: left; font-size: 13px; }
+.server-menu { position: absolute; z-index: 5; top: 58px; left: 16px; width: 238px; padding: 8px; border: 1px solid #1e1f22; border-radius: 5px; background: #18191c; box-shadow: 0 12px 28px #000a; }
+.server-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border: 0; border-radius: 3px; background: transparent; color: #dbdee1; text-align: left; font-size: 13px; }
 .server-menu button:hover { background: #5865f2; color: #fff; }.server-menu button span { display: grid; place-items: center; width: 18px; color: #b5bac1; font-size: 15px; }.server-menu button:hover span { color: #fff; }
 .server-menu-divider { height: 1px; margin: 5px 4px; background: #35363c; }
 .channel-panel { position: relative; }
-@media (max-width: 900px) { .server-menu { left: 8px; } }
+@media (max-width: 900px) { .app-shell { grid-template-columns: 64px minmax(0, 1fr) 190px; }.server-menu { left: 8px; } }
 
 .settings-dialog { width: min(900px, calc(100% - 28px)); }
 .settings-dialog .dialog-card { display: grid; grid-template-columns: 210px minmax(0, 1fr); min-height: 560px; padding: 0; }
