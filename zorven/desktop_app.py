@@ -47,6 +47,7 @@ class ZorvenChat(tk.Tk):
         self._build_ui()
         self.load_channels()
         self.load_team()
+        self.after(15000, self._poll)
 
     # -- UI construction -------------------------------------------------
     def _build_ui(self):
@@ -90,15 +91,17 @@ class ZorvenChat(tk.Tk):
         # User bar (bottom of channel panel)
         user_bar = tk.Frame(channel_panel, bg="#232428", height=62)
         user_bar.pack(fill="x", side="bottom")
-        tk.Label(user_bar, text="?", bg="#e7765f", fg="white", font=("Segoe UI", 10, "bold"), width=3, height=1).pack(
-            side="left", padx=(10, 8), pady=10
-        )
+        self.self_avatar = tk.Label(user_bar, text="?", bg="#e7765f", fg="white", font=("Segoe UI", 10, "bold"), width=3, height=1)
+        self.self_avatar.pack(side="left", padx=(10, 8), pady=10)
         name_box = tk.Frame(user_bar, bg="#232428")
         name_box.pack(side="left", fill="x", expand=True, pady=10)
         self.self_name = tk.Label(name_box, text="Guest", bg="#232428", fg=INK, font=("Segoe UI", 10, "bold"), anchor="w")
         self.self_name.pack(fill="x")
         self.self_status = tk.Label(name_box, text="Sign in to join in", bg="#232428", fg=MUTED, font=("Segoe UI", 8), anchor="w")
         self.self_status.pack(fill="x")
+        self.logout_button = tk.Button(
+            user_bar, text="\u23fb", command=self.logout, bg="#232428", fg=MUTED, bd=0, font=("Segoe UI", 10)
+        )
 
         # Chat panel
         chat_panel = tk.Frame(self, bg=CHAT_PANEL)
@@ -185,6 +188,8 @@ class ZorvenChat(tk.Tk):
                 label = f"{member['username']} [{member.get('tag', 'CREW')}]"
                 self.team_list.insert(tk.END, label)
                 self.member_list.insert(tk.END, label)
+            if self.current_user and not any(member["username"] == self.current_user["username"] for member in team):
+                self.member_list.insert(tk.END, f"{self.current_user['username']} [{self.current_user['tag']}]")
         except Exception:
             pass
 
@@ -219,11 +224,35 @@ class ZorvenChat(tk.Tk):
             data = self.api("/api/auth/login", "POST", {"username": self.username.get(), "password": self.password.get()})
             self.token = data["token"]
             self.current_user = data["user"]
-            self.status.config(text=f"Signed in as {data['user']['username']} [{data['user']['tag']}]")
-            self.self_name.config(text=data["user"]["username"])
-            self.self_status.config(text=f"[{data['user']['tag']}]")
+            self._apply_identity()
+            self.status.config(text=f"Signed in as {data['user']['username']}")
+            self.username.delete(0, tk.END)
+            self.password.delete(0, tk.END)
+            self.load_team()
         except Exception as error:
             messagebox.showerror("Login failed", str(error))
+
+    def logout(self):
+        if self.token:
+            try:
+                self.api("/api/auth/logout", "POST")
+            except Exception:
+                pass
+        self.token = ""
+        self.current_user = None
+        self._apply_identity()
+        self.status.config(text="Not signed in")
+        self.load_team()
+
+    def _apply_identity(self):
+        user = self.current_user
+        self.self_name.config(text=user["displayName"] if user else "Guest")
+        self.self_status.config(text=user["tag"] if user else "Sign in to join in")
+        self.self_avatar.config(text=(user["username"][:1].upper() if user else "?"), bg=(ACCENT if user else "#e7765f"))
+        if user:
+            self.logout_button.pack(side="right", padx=(0, 10))
+        else:
+            self.logout_button.pack_forget()
 
     def send_message(self):
         if not self.token:
@@ -243,6 +272,12 @@ class ZorvenChat(tk.Tk):
         self.messages.config(state="normal")
         self.messages.insert(tk.END, message)
         self.messages.config(state="disabled")
+
+    # -- live sync, mirrors the website's 15s polling loop --------------
+    def _poll(self):
+        self.refresh_messages()
+        self.load_team()
+        self.after(15000, self._poll)
 
 
 def main():
