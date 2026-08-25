@@ -67,11 +67,12 @@
       const actions = user.banned
         ? `<button type="button" data-action="unban" data-username="${escapeHtml(user.username)}">Unban</button>`
         : `<button type="button" class="danger" data-action="ban" data-username="${escapeHtml(user.username)}">Ban</button>`;
+      const accountAction = user.username === "admin" ? "" : `<button type="button" class="${user.deactivated ? "" : "danger"}" data-action="${user.deactivated ? "reactivate" : "deactivate"}" data-username="${escapeHtml(user.username)}">${user.deactivated ? "Reactivate" : "Deactivate"}</button>`;
       const deleteAction = user.username === "admin" ? "" : `<button type="button" class="danger" data-action="delete" data-username="${escapeHtml(user.username)}">Delete</button>`;
       const staffToggle = user.role === "staff"
         ? `<button type="button" data-action="remove-badge" data-username="${escapeHtml(user.username)}">Remove staff</button>`
         : `<button type="button" data-action="assign-badge" data-username="${escapeHtml(user.username)}">Make staff</button>`;
-      return `<div class="admin-row"><div class="admin-row-identity"><strong>${escapeHtml(user.username)}</strong>${badges}</div><div class="admin-row-actions">${staffToggle}${actions}${deleteAction}</div></div>`;
+      return `<div class="admin-row"><div class="admin-row-identity"><strong>${escapeHtml(user.username)}</strong>${badges}${user.deactivated ? "<span class=\"admin-badge banned\">DEACTIVATED</span>" : ""}</div><div class="admin-row-actions">${staffToggle}${actions}${accountAction}${deleteAction}</div></div>`;
     }).join("") || `<p class="dialog-copy">No accounts match your search.</p>`;
     document.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", () => handleUserAction(button.dataset.action, button.dataset.username)));
   }
@@ -91,6 +92,9 @@
       } else if (action === "delete") {
         if (!window.confirm(`Delete ${username}'s account? This cannot be undone.`)) return;
         await command("delete_user", { username });
+      } else if (action === "deactivate" || action === "reactivate") {
+        if (action === "deactivate" && !window.confirm(`Deactivate ${username}'s account? They will be signed out.`)) return;
+        await command(`${action}_user`, { username });
       }
       notify(`Updated ${username}.`);
       await loadUsers();

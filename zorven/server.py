@@ -170,6 +170,7 @@ def public_user(user):
         "bio": user.get("bio", ""),
         "permissions": profile.get("permissions", []),
         "banned": bool(user.get("banned")),
+        "deactivated": bool(user.get("deactivated")),
     }
 
 
@@ -371,6 +372,9 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 return
             if is_banned(user):
                 self._send_json({"error": "This account is banned", "reason": user.get("banReason", "No reason provided")}, 403)
+                return
+            if user.get("deactivated"):
+                self._send_json({"error": "This account has been deactivated"}, 403)
                 return
             if not user["password"].startswith("pbkdf2_sha256$"):
                 user["password"] = hash_password(password)
@@ -657,6 +661,15 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 target.pop("banReason", None)
                 save_data()
                 self._send_json({"updated": True, "user": public_user(target)})
+            elif command in {"deactivate_user", "reactivate_user"}:
+                if not target or target["username"] in {actor["username"], "admin"}:
+                    self._send_json({"error": "That account cannot be changed"}, 400)
+                    return
+                target["deactivated"] = command == "deactivate_user"
+                if target["deactivated"]:
+                    DATA["sessions"] = {token: username for token, username in DATA["sessions"].items() if username != target["username"]}
+                save_data()
+                self._send_json({"updated": True, "user": public_user(target), "deactivated": target["deactivated"]})
             elif command == "delete_server":
                 server_id = str(args.get("serverId", ""))
                 if server_id not in DATA["servers"]:
