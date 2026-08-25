@@ -14,6 +14,28 @@ python3 zorven/server.py
 Open `http://127.0.0.1:8765/login` in a browser. On Windows, run
 `zorven/start_zorven.bat` instead.
 
+## Desktop and mobile app notes
+
+The desktop launcher in `zorven/desktop_app.py` connects to the same backend, but
+it can also point at a custom host instead of hard-coded localhost.
+
+Examples:
+
+```bash
+ZORVEN_API_URL="https://api.example.com" python3 zorven/desktop_app.py
+python3 zorven/desktop_app.py --host https://api.example.com
+```
+
+On Windows, you can also launch the desktop client with a custom API host:
+
+```bat
+zorven\start_zorven_chat.bat https://api.example.com
+```
+
+The browser app is fully mobile-friendly and uses the same API host your server
+is serving on. A hosted custom domain can be used for both the web app and the
+PC desktop client by setting the same API URL.
+
 ## Verify before release
 
 ```bash
@@ -43,20 +65,10 @@ HTTPS for its supplied URL and custom domains.
 
 ### First staff account
 
-Before creating the first staff account, add a `SETUP_KEY` environment variable
-in the Render service's **Environment** settings. Use a long, unique value and
-keep it private. On the Zorven login screen, select **Set up the first staff
-account**, enter that key, and create the account. The first account receives all
-staff permissions. This setup path automatically locks after a staff account has
-been created; later full-access staff can create additional staff accounts from
-the staff panel.
-
-### Zorven Team account
-
-The staff setup dialog also has **Claim the Zorven Team account with this
-password**, available while `SETUP_KEY` is set. Enter the setup key and a
-password, then use it to sign in as `zorven-team`, a real account with every
-staff permission. Re-running this action resets that account's password.
+Open `http://127.0.0.1:8765/admin` and use the setup key to create the first
+staff account. The page is available while `SETUP_KEY` is set. Enter the setup
+key and a password, then use it to sign in as `zorven-team`, a real account with
+every staff permission. Re-running this action resets that account's password.
 
 ### Admin console
 

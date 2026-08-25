@@ -3,7 +3,7 @@
   const elements = {
     loginGate: document.querySelector("#loginGate"), content: document.querySelector("#adminContent"), identity: document.querySelector("#adminIdentity"),
     username: document.querySelector("#adminUsername"), password: document.querySelector("#adminPassword"), loginButton: document.querySelector("#adminLoginButton"), loginError: document.querySelector("#loginError"),
-    statsGrid: document.querySelector("#statsGrid"), usersTable: document.querySelector("#usersTable"), usersError: document.querySelector("#usersError"),
+    logoutButton: document.querySelector("#adminLogoutButton"), statsGrid: document.querySelector("#statsGrid"), usersTable: document.querySelector("#usersTable"), usersError: document.querySelector("#usersError"),
     search: document.querySelector("#userSearch"), refresh: document.querySelector("#refreshUsers"), clearQueue: document.querySelector("#clearQueueButton"), exportData: document.querySelector("#exportDataButton"),
     toast: document.querySelector("#toast"),
   };
@@ -31,6 +31,24 @@
       localStorage.setItem("zorven-token", state.token);
       await bootstrap();
     } catch (error) { elements.loginError.textContent = error.message; }
+  }
+
+  async function logout() {
+    try {
+      if (state.token) await api("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      state.token = "";
+      state.user = null;
+      localStorage.removeItem("zorven-token");
+      elements.logoutButton.hidden = true;
+      elements.loginGate.hidden = false;
+      elements.content.hidden = true;
+      elements.identity.textContent = "";
+      elements.loginError.textContent = "";
+      notify("You have been signed out.");
+    }
   }
 
   function renderStats(stats) {
@@ -103,24 +121,33 @@
   elements.refresh.addEventListener("click", loadUsers);
   elements.search.addEventListener("input", renderUsers);
   elements.loginButton.addEventListener("click", login);
+  elements.logoutButton.addEventListener("click", logout);
   elements.password.addEventListener("keydown", event => { if (event.key === "Enter") login(); });
 
   async function bootstrap() {
-    if (!state.token) { elements.loginGate.hidden = false; elements.content.hidden = true; return; }
+    if (!state.token) {
+      elements.logoutButton.hidden = true;
+      elements.loginGate.hidden = false;
+      elements.content.hidden = true;
+      return;
+    }
     try {
       const identity = await api("/api/me");
       if (!identity.user || !identity.user.permissions.includes("manage_members")) {
         elements.loginError.textContent = identity.user ? "This account does not have member management permission." : "";
+        elements.logoutButton.hidden = true;
         elements.loginGate.hidden = false;
         elements.content.hidden = true;
         return;
       }
       state.user = identity.user;
       elements.identity.textContent = `${state.user.username} - ${state.user.tag}`;
+      elements.logoutButton.hidden = false;
       elements.loginGate.hidden = true;
       elements.content.hidden = false;
       await Promise.all([loadStats(), loadUsers()]);
     } catch {
+      elements.logoutButton.hidden = true;
       elements.loginGate.hidden = false;
       elements.content.hidden = true;
     }

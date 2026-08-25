@@ -1,9 +1,27 @@
 import json
+import os
+import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 from urllib import request
 
-API = "http://127.0.0.1:8765"
+DEFAULT_API = "http://127.0.0.1:8765"
+
+
+def resolve_api_base_url(default=DEFAULT_API, argv=None):
+    argv = sys.argv if argv is None else argv
+    override = os.environ.get("ZORVEN_API_URL", "").strip()
+    if not override:
+        for index, value in enumerate(argv):
+            if value in {"--host", "--api-url", "--base-url"} and index + 1 < len(argv):
+                override = argv[index + 1].strip()
+                break
+    if not override:
+        return default
+    return override.rstrip("/")
+
+
+API = resolve_api_base_url()
 
 
 class ZorvenChat(tk.Tk):

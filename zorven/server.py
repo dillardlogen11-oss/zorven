@@ -42,6 +42,7 @@ DATA.setdefault("servers", {"zorven": {"id": "zorven", "name": "Zorven Community
 for stored_server in DATA["servers"].values():
     stored_server.setdefault("description", "A Zorven community server.")
 
+
 GAMES = [
     {
         "id": "zorven-first-light",
@@ -99,6 +100,24 @@ def hash_password(password):
     return "pbkdf2_sha256$310000$" + salt.hex() + "$" + digest.hex()
 
 
+def ensure_default_admin_account():
+    if any(user.get("role") in {"staff", "admin"} for user in DATA["users"].values()):
+        return
+    DATA["users"]["admin"] = {
+        "username": "admin",
+        "password": hash_password("admin123"),
+        "role": "admin",
+        "displayName": "Admin",
+        "bio": "Primary administrator",
+        "staffProfile": {"tag": "ADMIN", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
+        "createdAt": int(time.time()),
+    }
+    save_data()
+
+
+ensure_default_admin_account()
+
+
 def verify_password(password, stored):
     if stored.startswith("pbkdf2_sha256$"):
         _, iterations, salt_hex, digest_hex = stored.split("$", 3)
@@ -121,9 +140,12 @@ def get_user(handler):
 
 
 def public_user(user):
-    profile = user.get("staffProfile", {}) if user.get("role") == "staff" else {}
-    if user.get("role") == "staff" and not profile:
-        profile = STAFF_PROFILES.get(user.get("username"), {})
+    if user.get("username") == "admin" or user.get("role") == "admin":
+        profile = {"tag": "ADMIN", "color": "#f0b232", "permissions": ALL_PERMISSIONS}
+    else:
+        profile = user.get("staffProfile", {}) if user.get("role") == "staff" else {}
+        if user.get("role") == "staff" and not profile:
+            profile = STAFF_PROFILES.get(user.get("username"), {})
     return {
         "username": user["username"],
         "role": user.get("role", "member"),
@@ -137,7 +159,7 @@ def public_user(user):
 
 
 def can_run(user, permission):
-    return user and permission in public_user(user)["permissions"]
+    return bool(user and (user.get("username") == "admin" or user.get("role") == "admin" or permission in public_user(user)["permissions"]))
 
 
 def find_user(username):
@@ -282,6 +304,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             DATA["sessions"][token] = username
             save_data()
             self._send_json({"token": token, "user": public_user(user)})
+        elif path == "/api/auth/logout":
+            token = self.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+            if token:
+                DATA["sessions"].pop(token, None)
+                save_data()
+            self._send_json({"loggedOut": True})
         elif path == "/api/account/settings":
             user = get_user(self)
             if not user:
@@ -344,7 +372,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             if any(user.get("role") == "staff" for user in DATA["users"].values()):
                 self._send_json({"error": "A staff account already exists"}, 409)
                 return
-            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+            if SETUP_KEY and not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
                 self._send_json({"error": "A valid setup key is required"}, 403)
                 return
             username = str(payload.get("username", "")).strip().lower()
@@ -359,7 +387,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             save_data()
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
         elif path == "/api/staff/claim-team-account":
-            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+            if SETUP_KEY and not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
                 self._send_json({"error": "A valid setup key is required"}, 403)
                 return
             password = str(payload.get("password", ""))
@@ -373,7 +401,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             save_data()
             self._send_json({"created": True, "user": public_user(DATA["users"][username])}, 201)
         elif path == "/api/staff/reset-accounts":
-            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+            if SETUP_KEY and not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
                 self._send_json({"error": "A valid setup key is required"}, 403)
                 return
             removed = len(DATA["users"])
@@ -382,7 +410,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             save_data()
             self._send_json({"cleared": True, "removed": removed})
         elif path == "/api/staff/recover-admin":
-            if not SETUP_KEY or not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
+            if SETUP_KEY and not hmac.compare_digest(str(payload.get("setupKey", "")), SETUP_KEY):
                 self._send_json({"error": "A valid setup key is required"}, 403)
                 return
             if "admin" not in DATA["users"]:

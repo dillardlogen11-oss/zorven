@@ -33,6 +33,7 @@
     const canManage = !!user?.permissions?.includes("manage_members");
     elements.staffPanel.hidden = !canManage;
     elements.adminPanel.hidden = !canManage;
+    document.querySelector("#logoutButton").hidden = !user;
     renderMembers();
   }
 
@@ -148,6 +149,27 @@
     elements.username.focus();
   }
 
+  async function logout() {
+    if (!state.token) {
+      state.user = null;
+      localStorage.removeItem("zorven-token");
+      renderIdentity();
+      return;
+    }
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      state.token = "";
+      state.user = null;
+      localStorage.removeItem("zorven-token");
+      renderIdentity();
+      await bootstrap();
+      notify("You have been signed out.");
+    }
+  }
+
   function openStaffPanel() {
     const canManage = state.user?.permissions?.includes("manage_members");
     const isBootstrap = !state.user;
@@ -188,12 +210,12 @@
   document.querySelector("#accountButton").addEventListener("click", openAccountSettings);
   document.querySelector("#staffPanelButton").addEventListener("click", openStaffPanel);
   document.querySelector("#adminPanelButton").addEventListener("click", () => window.open("/admin", "_blank"));
+  document.querySelector("#logoutButton").addEventListener("click", logout);
   document.querySelector("#serverSettingsButton").addEventListener("click", openServerSettings);
   document.querySelector("#newServerButton").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector(".add-server").addEventListener("click", () => state.user ? elements.serverDialog.showModal() : openAuth());
   document.querySelector("#menuButton").addEventListener("click", () => elements.panel.classList.toggle("open"));
   elements.authSwitch.addEventListener("click", () => openAuth(!state.registerMode));
-  document.querySelector("#staffSetupButton").addEventListener("click", () => { elements.authDialog.close(); openStaffPanel(); });
   elements.recoverAdmin.addEventListener("click", async () => {
     if (!window.confirm("Remove the account named admin? This cannot be undone.")) return;
     elements.staffError.textContent = "";
