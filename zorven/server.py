@@ -250,6 +250,8 @@ class ZorvenHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if path != "/":
+            path = path.rstrip("/")
         if path == "/api/health":
             self._send_json({"platform": "Zorven", "status": "online", "mode": "development"})
         elif path == "/api/games":
