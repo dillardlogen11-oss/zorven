@@ -3,31 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1f242e">
-  <title>Zorven Community</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23d6f24a'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='sans-serif' font-size='36' font-weight='700' fill='%23182000'%3EZ%3C/text%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#4641d9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Zorven | Community</title>
+  <link rel="icon" href="/fluxer-symbol.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="app-shell" aria-label="Zorven community chat">
-    <aside class="rail" aria-label="Servers">
-      <button class="home-mark" id="directMessagesButton" type="button" aria-label="Direct messages">Z</button>
+    <aside class="rail" aria-label="Communities">
+      <button class="home-mark" id="directMessagesButton" type="button" aria-label="Direct messages">
+        <img src="/fluxer-symbol.svg" alt="" class="rail-symbol">
+      </button>
       <span class="rail-divider" aria-hidden="true"></span>
       <div id="serverList" class="server-list"></div>
       <span class="rail-divider" aria-hidden="true"></span>
-      <button class="server-mark add-server" type="button" aria-label="Create a server">+</button>
+      <div class="utility-stack">
+        <button class="server-mark add-server" type="button" aria-label="Create a server">+</button>
+        <a class="server-mark utility-mark" href="/download/zorven-client" aria-label="Download desktop client">&#10515;</a>
+        <a class="server-mark utility-mark" href="/maintenance" aria-label="System status">&#9889;</a>
+      </div>
     </aside>
 
     <aside class="channel-panel" id="channelPanel">
       <header class="community-header">
-        <div>
-          <p class="eyebrow">SERVER</p>
-          <button class="server-name-button" id="serverMenuButton" type="button" aria-expanded="false">Zorven <span class="server-status-dot" aria-label="Online"></span><span class="server-chevron" aria-hidden="true">&#9662;</span></button>
+        <div class="brand-lockup">
+          <img src="/fluxer-symbol.svg" alt="" class="brand-symbol">
+          <div class="header-copy">
+            <p class="eyebrow">FLUXER-STYLE SHELL</p>
+            <button class="server-name-button" id="serverMenuButton" type="button" aria-expanded="false">Zorven <span class="server-status-dot" aria-label="Online"></span><span class="server-chevron" aria-hidden="true">&#9662;</span></button>
+          </div>
         </div>
-        <div class="community-actions"><button class="icon-button" id="serverSettingsButton" type="button" aria-label="Server settings">&#9881;</button><button class="icon-button" id="newServerButton" type="button" aria-label="Create server">+</button></div>
+        <div class="community-actions">
+          <button class="icon-button theme-toggle" id="themeToggleButton" type="button" aria-label="Toggle theme">Light</button>
+          <button class="icon-button" id="serverSettingsButton" type="button" aria-label="Server settings">&#9881;</button>
+          <button class="icon-button" id="newServerButton" type="button" aria-label="Create server">+</button>
+        </div>
       </header>
       <div class="server-menu" id="serverMenu" hidden>
         <button type="button" data-server-action="boost"><span>&#9830;</span>Server Boost</button>
@@ -64,8 +77,16 @@
         <button class="mobile-menu icon-button" id="menuButton" type="button" aria-label="Open channels">&#9776;</button>
         <span class="hash">#</span>
         <div><h2 id="channelTitle">general</h2><p id="channelDescription">Loading channel...</p></div>
-        <div class="header-actions"><button class="icon-button" type="button" aria-label="Notifications">&#128276;</button><button class="icon-button" type="button" aria-label="Pinned messages">&#128204;</button><span class="online-dot"></span><span id="onlineCount">Community online</span></div>
+        <div class="header-actions"><a class="icon-button header-link" href="/download/zorven-client" aria-label="Download desktop client">&#10515;</a><button class="icon-button" id="openInboxButton" type="button" aria-label="Open direct messages">&#9993;</button><span class="online-dot"></span><span id="onlineCount">Community online</span></div>
       </header>
+      <section class="shell-banner" aria-labelledby="serverBannerName">
+        <div>
+          <p class="eyebrow">COMMUNITY OVERVIEW</p>
+          <h3 id="serverBannerName">Zorven</h3>
+          <p class="shell-banner-copy" id="serverBannerDescription">Loading your server experience...</p>
+        </div>
+        <div class="shell-banner-meta" id="serverBannerStats"></div>
+      </section>
       <div class="messages" id="messages" aria-live="polite"></div>
       <form class="composer" id="messageForm">
         <input id="messageInput" maxlength="2000" autocomplete="off" placeholder="Message #general" aria-label="Message channel">
@@ -82,9 +103,9 @@
   <dialog id="authDialog" class="dialog">
     <form method="dialog" class="dialog-card" id="authForm">
       <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
-      <p class="eyebrow">WELCOME TO ZORVEN</p>
-      <h2 id="authHeading">Sign in to the community</h2>
-      <p class="dialog-copy" id="authCopy">Use your account to post messages and create servers.</p>
+      <p class="eyebrow">WELCOME BACK</p>
+      <h2 id="authHeading">Sign in to continue</h2>
+      <p class="dialog-copy" id="authCopy">Keep your rooms, direct messages, and voice spaces synced across the Zorven shell.</p>
       <label>USERNAME<input id="usernameInput" minlength="3" maxlength="40" required autocomplete="username"></label>
       <label>PASSWORD<input id="passwordInput" type="password" minlength="8" required autocomplete="current-password"></label>
       <p class="form-error" id="authError" role="alert"></p>
@@ -96,7 +117,7 @@
   <dialog id="accountDialog" class="dialog settings-dialog">
     <form method="dialog" class="dialog-card" id="accountForm">
       <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
-      <aside class="settings-nav"><div class="settings-search">&#128269; <span>Search</span></div><p>ACCOUNT</p><button class="settings-nav-item active" type="button">&#128100; Account</button><button class="settings-nav-item" type="button">&#128274; Privacy & Safety</button><button class="settings-nav-item" type="button">&#128276; Notifications</button><p>APP SETTINGS</p><button class="settings-nav-item" type="button">&#127911; Voice & Video</button><button class="settings-nav-item" type="button">&#9881; Appearance</button></aside>
+      <aside class="settings-nav"><div class="settings-search">&#128269; <span>Search</span></div><p>ACCOUNT</p><button class="settings-nav-item active" type="button">&#128100; Account</button><button class="settings-nav-item" type="button">&#128274; Privacy &amp; Safety</button><button class="settings-nav-item" type="button">&#128276; Notifications</button><p>APP SETTINGS</p><button class="settings-nav-item" type="button">&#127911; Voice &amp; Video</button><button class="settings-nav-item" type="button">&#9728; Appearance</button></aside>
       <section class="settings-main"><p class="eyebrow">ACCOUNT SETTINGS</p><h2>My account</h2><div class="settings-profile"><span class="avatar avatar-self" id="settingsAvatar">?</span><div><strong id="settingsName">Account</strong><span>Profile and security</span></div></div><div class="settings-section"><p class="settings-section-title">PROFILE</p><label>DISPLAY NAME<input id="displayNameInput" maxlength="40" required autocomplete="nickname"></label><label>ABOUT ME<textarea id="bioInput" maxlength="190" rows="3" placeholder="Tell your community a little about yourself."></textarea></label></div><div class="settings-section"><p class="settings-section-title">PASSWORD AND AUTHENTICATION</p><label>CURRENT PASSWORD<input id="currentPasswordInput" type="password" autocomplete="current-password"></label><label>NEW PASSWORD<input id="newPasswordInput" type="password" minlength="8" autocomplete="new-password"></label></div><p class="form-error" id="accountError" role="alert"></p><div class="settings-actions"><span>Changes save to your account immediately.</span><button class="primary-button" value="default" type="submit">Save changes</button></div></section>
     </form>
   </dialog>
@@ -153,7 +174,7 @@
   <dialog id="directMessagesDialog" class="dialog direct-messages-dialog">
     <form method="dialog" class="dialog-card">
       <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
-      <p class="eyebrow">ZORVEN INBOX</p>
+      <p class="eyebrow">DIRECT MESSAGES</p>
       <h2>Direct messages</h2>
       <div id="directMessagesList" class="direct-messages-list"></div>
     </form>
