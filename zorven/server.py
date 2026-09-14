@@ -68,19 +68,95 @@ GAMES = [
 ]
 
 CHANNELS = [
-    {"id": "general", "name": "general", "description": "Talk about anything Zorven."},
-    {"id": "announcements", "name": "announcements", "description": "Official development updates."},
-    {"id": "feedback", "name": "feedback", "description": "Help shape the game."},
+    {"id": "general", "name": "general", "description": "Talk about anything Zorven.", "category": ""},
+    {"id": "announcements", "name": "announcements", "description": "Official development updates.", "category": ""},
+    {"id": "feedback", "name": "feedback", "description": "Help shape the game.", "category": ""},
 ]
 
 def server_channels(server):
     return server.get("channels", CHANNELS if server.get("id") == "zorven" else [])
 
 
+def normalize_label(value, limit):
+    return str(value or "").strip()[:limit]
+
+
+def dedupe_names(values):
+    seen = set()
+    result = []
+    for value in values:
+        normalized = normalize_label(value, 40)
+        if not normalized or normalized.lower() in seen:
+            continue
+        seen.add(normalized.lower())
+        result.append(normalized)
+    return result
+
+
+def parse_channel_lines(raw_value, existing_channels=None, allowed_categories=None):
+    existing_channels = existing_channels or {}
+    allowed_categories = {normalize_label(category, 40).lower() for category in (allowed_categories or []) if normalize_label(category, 40)}
+    parsed_channels = []
+    seen = set()
+    for raw_line in str(raw_value or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        category_name = ""
+        channel_name = line
+        if " > " in line:
+            possible_category, _, possible_name = line.partition(" > ")
+            normalized_category = normalize_label(possible_category, 40)
+            normalized_name = normalize_label(possible_name, 40)
+            if normalized_category and normalized_name and normalized_category.lower() in allowed_categories:
+                category_name = normalized_category
+                channel_name = normalized_name
+        channel_name = normalize_label(channel_name, 40)
+        if not channel_name or channel_name.lower() in seen:
+            continue
+        seen.add(channel_name.lower())
+        existing = existing_channels.get(channel_name.lower(), {})
+        explicit_category = bool(category_name)
+        parsed_channels.append(
+            {
+                "id": existing.get("id", secrets.token_hex(5)),
+                "name": channel_name,
+                "description": existing.get("description", ""),
+                "category": category_name if explicit_category else normalize_label(existing.get("category", ""), 40),
+            }
+        )
+    return parsed_channels
+
+
+def normalize_server_structure(server):
+    server["categories"] = dedupe_names(server.get("categories", []))
+    known_categories = {category.lower(): category for category in server["categories"]}
+    normalized_channels = []
+    seen = set()
+    for channel in server_channels(server):
+        name = normalize_label(channel.get("name"), 40)
+        if not name or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        category_name = normalize_label(channel.get("category", ""), 40)
+        normalized_channels.append(
+            {
+                "id": channel.get("id") or secrets.token_hex(5),
+                "name": name,
+                "description": normalize_label(channel.get("description", ""), 120),
+                "category": known_categories.get(category_name.lower(), "") if category_name else "",
+            }
+        )
+    server["channels"] = normalized_channels
+    server.setdefault("roles", [])
+    return server
+
+
 for stored_server in DATA["servers"].values():
-    stored_server.setdefault("channels", CHANNELS.copy() if stored_server.get("id") == "zorven" else [])
+    stored_server.setdefault("channels", [channel.copy() for channel in CHANNELS] if stored_server.get("id") == "zorven" else [])
     stored_server.setdefault("roles", [])
     stored_server.setdefault("categories", [])
+    normalize_server_structure(stored_server)
 
 STAFF_PROFILES = {
     "admin": {"tag": "FOUNDER", "badge": "founder", "color": "#f0b232", "permissions": ALL_PERMISSIONS},
@@ -451,18 +527,20 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 return
             name = str(payload.get("name", server["name"])).strip()[:60]
             description = str(payload.get("description", server.get("description", ""))).strip()[:180]
-            channel_names = [str(item).strip()[:40] for item in str(payload.get("channels", "")).splitlines() if str(item).strip()]
-            role_names = [str(item).strip()[:40] for item in str(payload.get("roles", "")).splitlines() if str(item).strip()]
-            category_names = [str(item).strip()[:40] for item in str(payload.get("categories", "")).splitlines() if str(item).strip()]
+            role_names = dedupe_names(str(payload.get("roles", "")).splitlines())
+            category_names = dedupe_names(str(payload.get("categories", "")).splitlines())
             if len(name) < 2:
                 self._send_json({"error": "Server name must be at least 2 characters"}, 400)
                 return
             server["name"] = name
             server["description"] = description
             existing_channels = {channel["name"].lower(): channel for channel in server_channels(server)}
-            server["channels"] = [{"id": existing_channels.get(channel_name.lower(), {}).get("id", secrets.token_hex(5)), "name": channel_name, "description": existing_channels.get(channel_name.lower(), {}).get("description", "")} for channel_name in channel_names]
+            allowed_categories = dedupe_names([*server.get("categories", []), *category_names])
+            server["channels"] = parse_channel_lines(payload.get("channels", ""), existing_channels, allowed_categories)
             server["roles"] = role_names
-            server["categories"] = category_names
+            implied_categories = [channel["category"] for channel in server["channels"] if channel["category"]]
+            server["categories"] = dedupe_names([*category_names, *implied_categories])
+            normalize_server_structure(server)
             save_data()
             self._send_json({"server": server})
         elif path.startswith("/api/servers/") and path.endswith("/channels"):
@@ -479,8 +557,14 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             if any(channel["name"].lower() == name.lower() for channel in server_channels(server)):
                 self._send_json({"error": "That channel already exists"}, 409)
                 return
-            channel = {"id": secrets.token_hex(5), "name": name, "description": str(payload.get("description", "")).strip()[:120]}
+            category = normalize_label(payload.get("category", ""), 40)
+            known_categories = {known_category.lower() for known_category in server.get("categories", [])}
+            if category and category.lower() not in known_categories:
+                self._send_json({"error": "Create the category first, then add channels to it"}, 400)
+                return
+            channel = {"id": secrets.token_hex(5), "name": name, "description": str(payload.get("description", "")).strip()[:120], "category": category}
             server.setdefault("channels", []).append(channel)
+            normalize_server_structure(server)
             save_data()
             self._send_json({"channel": channel, "server": server}, 201)
         elif path.startswith("/api/servers/") and path.endswith("/categories"):
@@ -498,6 +582,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "That category already exists"}, 409)
                 return
             server.setdefault("categories", []).append(name)
+            normalize_server_structure(server)
             save_data()
             self._send_json({"category": name, "server": server}, 201)
         elif path.startswith("/api/servers/") and path.endswith("/review"):
