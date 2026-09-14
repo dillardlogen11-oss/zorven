@@ -219,6 +219,7 @@ select {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -230,6 +231,7 @@ select {
 
 .header-copy {
   display: grid;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -254,12 +256,16 @@ label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .server-chevron {
@@ -493,10 +499,38 @@ label {
 
 .chat-header h2 {
   font-size: 1.05rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .header-actions {
   font-size: 0.82rem;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.chat-header-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.chat-header-copy p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.online-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#onlineCount {
+  white-space: nowrap;
 }
 
 .shell-banner {
@@ -1026,6 +1060,33 @@ label {
 
   .mobile-menu {
     display: inline-flex;
+  }
+}
+
+@media (max-width: 1024px) {
+  .community-header,
+  .chat-header {
+    gap: 8px;
+    padding: 0 14px;
+  }
+
+  .community-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    min-height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .community-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .chat-header-copy p,
+  #onlineCount {
+    display: none;
   }
 }
 
