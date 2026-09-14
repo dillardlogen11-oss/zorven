@@ -5,14 +5,14 @@
     diamond: ["◇", "#e76cff"], fire: ["●", "#ff6d4a"], star: ["★", "#f7d35c"], tools: ["⚙", "#d8bd32"],
     shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
   };
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {} };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
     staffDialog: document.querySelector("#staffDialog"), staffForm: document.querySelector("#staffForm"), staffEyebrow: document.querySelector("#staffEyebrow"), staffHeading: document.querySelector("#staffHeading"), staffCopy: document.querySelector("#staffCopy"), staffSetupKey: document.querySelector("#setupKeyInput"), staffSetupKeyLabel: document.querySelector("#setupKeyLabel"), staffUsername: document.querySelector("#staffUsernameInput"), staffPassword: document.querySelector("#staffPasswordInput"), staffBadge: document.querySelector("#staffBadgeInput"), fullAccess: document.querySelector("#fullAccessInput"), fullAccessLabel: document.querySelector("#fullAccessLabel"), staffSubmit: document.querySelector("#staffSubmit"), staffError: document.querySelector("#staffError"), recoverAdmin: document.querySelector("#recoverAdminButton"), claimTeam: document.querySelector("#claimTeamButton"), resetAccounts: document.querySelector("#resetAccountsButton"),
     accountDialog: document.querySelector("#accountDialog"), accountForm: document.querySelector("#accountForm"), settingsAvatar: document.querySelector("#settingsAvatar"), settingsName: document.querySelector("#settingsName"), displayName: document.querySelector("#displayNameInput"), bio: document.querySelector("#bioInput"), currentPassword: document.querySelector("#currentPasswordInput"), newPassword: document.querySelector("#newPasswordInput"), accountError: document.querySelector("#accountError"),
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverCategories: document.querySelector("#serverCategoriesInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
-    createChannelDialog: document.querySelector("#createChannelDialog"), createChannelForm: document.querySelector("#createChannelForm"), channelName: document.querySelector("#channelNameInput"), channelDescription: document.querySelector("#channelDescriptionInput"), channelCreateError: document.querySelector("#channelCreateError"),
+    createChannelDialog: document.querySelector("#createChannelDialog"), createChannelForm: document.querySelector("#createChannelForm"), channelName: document.querySelector("#channelNameInput"), channelCategory: document.querySelector("#channelCategoryInput"), channelDescription: document.querySelector("#channelDescriptionInput"), channelCreateError: document.querySelector("#channelCreateError"),
     createCategoryDialog: document.querySelector("#createCategoryDialog"), createCategoryForm: document.querySelector("#createCategoryForm"), categoryName: document.querySelector("#categoryNameInput"), categoryCreateError: document.querySelector("#categoryCreateError"),
     serverList: document.querySelector("#serverList"), directMessagesButton: document.querySelector("#directMessagesButton"), directMessagesDialog: document.querySelector("#directMessagesDialog"), directMessagesList: document.querySelector("#directMessagesList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
   };
@@ -90,10 +90,49 @@
     try { state.team = (await api("/api/team")).team; renderMembers(); } catch { /* team roster is best-effort */ }
   }
 
+  function updateCategoryOptions(selectedValue = "") {
+    const categories = state.server?.categories || [];
+    elements.channelCategory.innerHTML = [`<option value="">No category</option>`, ...categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)].join("");
+    elements.channelCategory.value = categories.includes(selectedValue) ? selectedValue : "";
+  }
+
+  function toggleCategory(categoryName) {
+    state.collapsedCategories[categoryName] = !state.collapsedCategories[categoryName];
+    renderChannels();
+  }
+
   function renderChannels() {
     const visibleChannels = state.hideMutedChannels ? state.channels.filter(channel => !channel.muted) : state.channels;
-    elements.channelList.innerHTML = visibleChannels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("");
+    const categoryNames = [];
+    const seenCategories = new Set();
+    (state.server?.categories || []).forEach(category => {
+      const key = category.toLowerCase();
+      if (!seenCategories.has(key)) {
+        seenCategories.add(key);
+        categoryNames.push(category);
+      }
+    });
+    visibleChannels.forEach(channel => {
+      const category = channel.category || "";
+      const key = category.toLowerCase();
+      if (category && !seenCategories.has(key)) {
+        seenCategories.add(key);
+        categoryNames.push(category);
+      }
+    });
+    const categorySections = categoryNames.map(category => {
+      const channels = visibleChannels.filter(channel => (channel.category || "").toLowerCase() === category.toLowerCase());
+      if (!channels.length) return "";
+      const collapsed = !!state.collapsedCategories[category];
+      return `<section class="channel-group"><button class="channel-group-toggle" type="button" data-category-toggle="${escapeHtml(category)}" aria-expanded="${String(!collapsed)}"><span class="channel-group-chevron">${collapsed ? "▸" : "▾"}</span>${escapeHtml(category)}</button>${collapsed ? "" : channels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("")}</section>`;
+    }).join("");
+    const uncategorizedChannels = visibleChannels.filter(channel => !channel.category);
+    const uncategorizedSection = uncategorizedChannels.length
+      ? `${categorySections ? `<p class="channel-group-label">OTHER CHANNELS</p>` : ""}${uncategorizedChannels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("")}`
+      : "";
+    elements.channelList.innerHTML = categorySections + uncategorizedSection || `<p class="dialog-copy channel-empty">No channels yet. Open Server Settings to add one.</p>`;
     document.querySelectorAll("[data-channel]").forEach(button => button.addEventListener("click", () => selectChannel(button.dataset.channel)));
+    document.querySelectorAll("[data-category-toggle]").forEach(button => button.addEventListener("click", () => toggleCategory(button.dataset.categoryToggle)));
   }
 
   function renderVoiceChannels() {
@@ -253,29 +292,30 @@
     elements.accountDialog.showModal();
   }
 
+  function openCreateChannel() {
+    if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
+    elements.channelName.value = "";
+    elements.channelDescription.value = "";
+    elements.channelCreateError.textContent = "";
+    updateCategoryOptions();
+    elements.createChannelDialog.showModal();
+    elements.channelName.focus();
+  }
+
+  function openCreateCategory() {
+    if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
+    elements.categoryName.value = "";
+    elements.categoryCreateError.textContent = "";
+    elements.createCategoryDialog.showModal();
+    elements.categoryName.focus();
+  }
+
   function openServerSettings() {
     if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
     elements.serverSettingsName.value = state.server?.name || "";
     elements.serverDescription.value = state.server?.description || "";
     elements.serverCategories.value = (state.server?.categories || []).join("\n");
-    elements.serverChannels.value = (state.server?.channels || []).map(channel => channel.name).join("\n");
-      function openCreateChannel() {
-        if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
-        elements.channelName.value = "";
-        elements.channelDescription.value = "";
-        elements.channelCreateError.textContent = "";
-        elements.createChannelDialog.showModal();
-        elements.channelName.focus();
-      }
-
-      function openCreateCategory() {
-        if (!state.server || !(state.server.owner === state.user?.username || state.user?.permissions?.includes("manage_servers"))) return notify("You need server management permission.");
-        elements.categoryName.value = "";
-        elements.categoryCreateError.textContent = "";
-        elements.createCategoryDialog.showModal();
-        elements.categoryName.focus();
-      }
-
+    elements.serverChannels.value = (state.server?.channels || []).map(channel => channel.category ? `${channel.category} > ${channel.name}` : channel.name).join("\n");
     elements.serverRoles.value = (state.server?.roles || []).join("\n");
     elements.serverSettingsError.textContent = "";
     elements.serverSettingsDialog.showModal();
@@ -428,7 +468,7 @@
     if (event.submitter?.value === "cancel") return elements.createChannelDialog.close();
     elements.channelCreateError.textContent = "";
     try {
-      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/channels`, { method: "POST", body: JSON.stringify({ name: elements.channelName.value.trim(), description: elements.channelDescription.value.trim() }) });
+      const result = await api(`/api/servers/${encodeURIComponent(state.server.id)}/channels`, { method: "POST", body: JSON.stringify({ name: elements.channelName.value.trim(), category: elements.channelCategory.value, description: elements.channelDescription.value.trim() }) });
       state.server = result.server;
       state.servers = state.servers.map(server => server.id === result.server.id ? result.server : server);
       state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(result.server.id)}`)).channels;

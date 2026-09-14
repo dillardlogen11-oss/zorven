@@ -110,7 +110,8 @@
       <p class="settings-hint">Only the server owner can change these settings.</p>
       <label>DESCRIPTION<textarea id="serverDescriptionInput" maxlength="180" rows="3" placeholder="What is this server about?"></textarea></label>
       <label>CATEGORIES<textarea id="serverCategoriesInput" rows="3" placeholder="One category per line"></textarea></label>
-      <label>CHANNELS<textarea id="serverChannelsInput" rows="4" placeholder="One channel per line"></textarea></label>
+      <label>CHANNELS<textarea id="serverChannelsInput" rows="4" placeholder="Use &quot;Category &gt; channel&quot; or just &quot;channel&quot;"></textarea></label>
+      <p class="settings-hint">Use one channel per line. Prefix a line with <strong>Category &gt;</strong> to place that channel inside a category.</p>
       <label>CUSTOM ROLES<textarea id="serverRolesInput" rows="4" placeholder="One role per line"></textarea></label>
       <p class="form-error" id="serverSettingsError" role="alert"></p>
       <button class="primary-button" value="default" type="submit">Save server</button>
@@ -164,6 +165,7 @@
       <p class="eyebrow">SERVER MENU</p>
       <h2>Create channel</h2>
       <label>CHANNEL NAME<input id="channelNameInput" minlength="2" maxlength="40" required autocomplete="off"></label>
+      <label>CATEGORY<select id="channelCategoryInput"><option value="">No category</option></select></label>
       <label>DESCRIPTION<textarea id="channelDescriptionInput" maxlength="120" rows="3" placeholder="Optional channel description"></textarea></label>
       <p class="form-error" id="channelCreateError" role="alert"></p>
       <button class="primary-button" value="default" type="submit">Create channel</button>

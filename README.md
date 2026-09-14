@@ -37,6 +37,13 @@ The browser app is fully mobile-friendly and uses the same API host your server
 is serving on. A hosted custom domain can be used for both the web app and the
 PC desktop client by setting the same API URL.
 
+## Server organization
+
+Community owners can now organize channels into categories from **Server
+Settings** or the **Create channel** flow. In the settings editor, use one
+channel per line and prefix a channel with `Category > channel` to place it in a
+category.
+
 ## Verify before release
 
 ```bash

@@ -36,6 +36,11 @@ h1 { font-size: 23px; }.icon-button { border: 0; background: transparent; color:
 .section-label { padding: 0 9px 8px; }
 .channel-button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); text-align: left; font-weight: 600; }
 .channel-button:hover, .channel-button.active { background: #323b48; color: var(--ink); }.channel-button .hash { font-size: 19px; color: #758090; }
+.channel-group { margin-bottom: 8px; }
+.channel-group-toggle, .channel-group-label { display: flex; align-items: center; gap: 4px; width: 100%; padding: 2px 9px 6px; border: 0; background: transparent; color: #949ba4; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.channel-group-toggle:hover { color: #dbdee1; }
+.channel-group-chevron { display: inline-block; width: 12px; color: #6f7884; font-size: 11px; }
+.channel-empty { padding: 0 9px; }
 .community-actions { display: flex; }.voice-section-label { margin-top: 17px; }.voice-room { margin-bottom: 4px; }.voice-room.active { border-radius: 5px; background: #29323e; }.voice-button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); text-align: left; font-weight: 600; }.voice-button:hover, .voice-room.active .voice-button { color: var(--ink); }.voice-button span { color: #8b97a7; font-size: 16px; }.voice-button small { margin-left: auto; color: var(--accent); }.voice-users { display: grid; gap: 4px; padding: 0 10px 9px 33px; }.voice-user { overflow: hidden; color: #abb7c4; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }.voice-controls { display: flex; gap: 5px; padding: 0 10px 8px 33px; }.voice-controls button { border: 0; border-radius: 4px; background: #394656; color: var(--ink); padding: 4px 7px; font-size: 10px; font-weight: 700; }.voice-controls button:last-child { color: var(--danger); }
 .user-bar { display: flex; align-items: center; gap: 10px; min-height: 62px; margin-top: auto; padding: 10px 12px; border-top: 1px solid var(--line); background: #191e26; }
 .avatar { display: grid; flex: 0 0 auto; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #5865f2; color: white; font-weight: 700; }.avatar-self { background: #e7765f; }
@@ -77,6 +82,8 @@ body { background: #232428; }
 .channel-button { padding: 7px 11px; border-radius: 4px; font-size: 13px; }
 .channel-button:hover, .channel-button.active { background: #3f4148; color: #fff; }
 .channel-button.active { box-shadow: none; }
+.channel-group-toggle, .channel-group-label { color: #949ba4; padding-top: 4px; }
+.channel-group-toggle:hover { color: #dbdee1; background: transparent; }
 .chat-panel { background: #313338; }
 .chat-header { padding: 0 20px; }
 .chat-header h2 { font-size: 16px; }
