@@ -558,10 +558,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "That channel already exists"}, 409)
                 return
             category = normalize_label(payload.get("category", ""), 40)
+            known_categories = {known_category.lower() for known_category in server.get("categories", [])}
+            if category and category.lower() not in known_categories:
+                self._send_json({"error": "Create the category first, then add channels to it"}, 400)
+                return
             channel = {"id": secrets.token_hex(5), "name": name, "description": str(payload.get("description", "")).strip()[:120], "category": category}
             server.setdefault("channels", []).append(channel)
-            if category:
-                server["categories"] = dedupe_names([*server.get("categories", []), category])
             normalize_server_structure(server)
             save_data()
             self._send_json({"channel": channel, "server": server}, 201)

@@ -104,6 +104,7 @@
 
   function renderChannels() {
     const visibleChannels = state.hideMutedChannels ? state.channels.filter(channel => !channel.muted) : state.channels;
+    const groupedChannels = new Map();
     const categoryNames = [];
     const seenCategories = new Set();
     (state.server?.categories || []).forEach(category => {
@@ -111,6 +112,7 @@
       if (!seenCategories.has(key)) {
         seenCategories.add(key);
         categoryNames.push(category);
+        groupedChannels.set(key, []);
       }
     });
     visibleChannels.forEach(channel => {
@@ -119,10 +121,12 @@
       if (category && !seenCategories.has(key)) {
         seenCategories.add(key);
         categoryNames.push(category);
+        groupedChannels.set(key, []);
       }
+      if (category) groupedChannels.get(key).push(channel);
     });
     const categorySections = categoryNames.map(category => {
-      const channels = visibleChannels.filter(channel => (channel.category || "").toLowerCase() === category.toLowerCase());
+      const channels = groupedChannels.get(category.toLowerCase()) || [];
       if (!channels.length) return "";
       const collapsed = !!state.collapsedCategories[category.toLowerCase()];
       return `<section class="channel-group"><button class="channel-group-toggle" type="button" data-category-toggle="${escapeHtml(category)}" aria-expanded="${String(!collapsed)}"><span class="channel-group-chevron">${collapsed ? "▸" : "▾"}</span>${escapeHtml(category)}</button>${collapsed ? "" : channels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("")}</section>`;
