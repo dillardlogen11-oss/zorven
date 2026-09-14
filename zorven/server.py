@@ -295,6 +295,7 @@ def resolve_web_route(path):
         "/maintenance": "maintenance.html",
         "/maintenance.html": "maintenance.html",
         "/zorven-maintenance": "maintenance.html",
+        "/manifest.json": "manifest.json",
     }
     return route_map.get(normalized)
 
@@ -419,6 +420,10 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self._send_file("login.js", "text/javascript; charset=utf-8")
         elif path == "/admin.js":
             self._send_file("admin.js", "text/javascript; charset=utf-8")
+        elif path == "/manifest.json":
+            self._send_file("manifest.json", "application/manifest+json; charset=utf-8")
+        elif path == "/fluxer-symbol.svg":
+            self._send_file("fluxer-symbol.svg", "image/svg+xml")
         elif path == "/admin.css":
             self._send_file("admin.css", "text/css; charset=utf-8")
         elif path == "/maintenance.css":

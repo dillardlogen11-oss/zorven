@@ -5,7 +5,8 @@
     diamond: ["◇", "#e76cff"], fire: ["●", "#ff6d4a"], star: ["★", "#f7d35c"], tools: ["⚙", "#d8bd32"],
     shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
   };
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {} };
+  const THEME_STORAGE_KEY = "zorven-theme";
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {}, theme: "dark" };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
@@ -14,7 +15,7 @@
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverCategories: document.querySelector("#serverCategoriesInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
     createChannelDialog: document.querySelector("#createChannelDialog"), createChannelForm: document.querySelector("#createChannelForm"), channelName: document.querySelector("#channelNameInput"), channelCategory: document.querySelector("#channelCategoryInput"), channelDescription: document.querySelector("#channelDescriptionInput"), channelCreateError: document.querySelector("#channelCreateError"),
     createCategoryDialog: document.querySelector("#createCategoryDialog"), createCategoryForm: document.querySelector("#createCategoryForm"), categoryName: document.querySelector("#categoryNameInput"), categoryCreateError: document.querySelector("#categoryCreateError"),
-    serverList: document.querySelector("#serverList"), directMessagesButton: document.querySelector("#directMessagesButton"), directMessagesDialog: document.querySelector("#directMessagesDialog"), directMessagesList: document.querySelector("#directMessagesList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton")
+    serverList: document.querySelector("#serverList"), directMessagesButton: document.querySelector("#directMessagesButton"), directMessagesDialog: document.querySelector("#directMessagesDialog"), directMessagesList: document.querySelector("#directMessagesList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton"), themeToggle: document.querySelector("#themeToggleButton"), openInboxButton: document.querySelector("#openInboxButton"), serverBannerName: document.querySelector("#serverBannerName"), serverBannerDescription: document.querySelector("#serverBannerDescription"), serverBannerStats: document.querySelector("#serverBannerStats")
   };
   async function api(path, options = {}) {
     const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) };
@@ -31,6 +32,31 @@
   function escapeHtml(value) { const node = document.createElement("span"); node.textContent = value; return node.innerHTML; }
   function formatTime(timestamp) { return timestamp ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(timestamp * 1000)) : "now"; }
   function notify(message) { elements.toast.textContent = message; elements.toast.classList.add("show"); window.clearTimeout(notify.timer); notify.timer = window.setTimeout(() => elements.toast.classList.remove("show"), 3200); }
+  function resolveTheme() {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === "light" || storedTheme === "dark") return storedTheme;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  function applyTheme(theme) {
+    state.theme = theme === "light" ? "light" : "dark";
+    document.documentElement.classList.toggle("theme-light", state.theme === "light");
+    localStorage.setItem(THEME_STORAGE_KEY, state.theme);
+    elements.themeToggle.textContent = state.theme === "light" ? "Dark" : "Light";
+  }
+  function renderServerBanner() {
+    const server = state.server;
+    const voiceParticipants = state.channels.reduce((total, channel) => total + ((state.voiceRooms[channel.id] || []).length), 0);
+    const activeVoiceRooms = state.channels.filter(channel => (state.voiceRooms[channel.id] || []).length).length;
+    const roster = [...state.team];
+    if (state.user && !roster.some(member => member.username === state.user.username)) roster.unshift(state.user);
+    elements.serverBannerName.textContent = server?.name || "Zorven";
+    elements.serverBannerDescription.textContent = server?.description || "A Fluxer-inspired shell for messages, rooms, and lightweight voice spaces.";
+    elements.serverBannerStats.innerHTML = [
+      `${state.channels.length} channel${state.channels.length === 1 ? "" : "s"}`,
+      `${Math.max(roster.length, 1)} member${Math.max(roster.length, 1) === 1 ? "" : "s"}`,
+      activeVoiceRooms ? `${voiceParticipants} in voice` : "Voice ready"
+    ].map(label => `<span class="stat-chip">${escapeHtml(label)}</span>`).join("");
+  }
 
   async function openDirectMessages() {
     if (!state.user) return openAuth();
@@ -79,6 +105,7 @@
     const count = Math.max(roster.length, 1);
     elements.memberCount.textContent = count;
     elements.onlineCount.textContent = `${count} online`;
+    renderServerBanner();
   }
 
   function badgeMarkup(user) {
@@ -152,7 +179,7 @@
   }
 
   async function loadVoice() {
-    try { state.voiceRooms = (await api("/api/voice")).rooms; renderVoiceChannels(); } catch (error) { if (state.user) notify(error.message); }
+    try { state.voiceRooms = (await api("/api/voice")).rooms; renderVoiceChannels(); renderServerBanner(); } catch (error) { if (state.user) notify(error.message); }
   }
 
   async function joinVoice(channelId) {
@@ -201,10 +228,10 @@
 
   async function loadMessages() {
     if (!state.channel) {
-      elements.messages.innerHTML = `<section class="welcome empty-server"><div class="welcome-mark">+</div><h3>This server is ready for you</h3><p>Add channels and roles in Server Settings to get started.</p></section>`;
+      elements.messages.innerHTML = `<section class="welcome empty-server"><div class="welcome-mark">+</div><p class="eyebrow">START HERE</p><h3>${escapeHtml(state.server?.name || "This server")} is ready for channels</h3><p>Open Server Settings to add categories, launch focused rooms, and shape the space around your community.</p><div class="welcome-pills"><span>Create channels</span><span>Organize by category</span><span>Invite your team</span></div></section>`;
       return;
     }
-    elements.messages.innerHTML = `<section class="welcome"><div class="welcome-mark">#</div><h3>Welcome to #${escapeHtml(elements.title.textContent)}</h3><p>This is the start of the ${escapeHtml(elements.title.textContent)} channel.</p></section>`;
+    elements.messages.innerHTML = `<section class="welcome"><div class="welcome-mark">#</div><p class="eyebrow">CHANNEL OVERVIEW</p><h3>Welcome to #${escapeHtml(elements.title.textContent)}</h3><p>${escapeHtml(elements.description.textContent || `This is the start of the ${elements.title.textContent} channel.`)}</p><div class="welcome-pills"><span>${escapeHtml(state.server?.name || "Community")} room</span><span>Persistent chat history</span><span>Voice-ready channel list</span></div></section>`;
     try {
       const { messages } = await api(`/api/channels/${encodeURIComponent(state.channel)}/messages?serverId=${encodeURIComponent(state.server?.id || "zorven")}`);
       elements.messages.insertAdjacentHTML("beforeend", messages.map(messageMarkup).join(""));
@@ -219,6 +246,7 @@
       state.servers = serverData.servers;
       state.server = state.servers.find(server => server.owner === state.user?.username) || state.servers[0];
       renderServers();
+      renderServerBanner();
       document.querySelector(".server-name-button").firstChild.textContent = `${state.server?.name || "Choose a server"} `;
       state.channels = (await api(`/api/channels?serverId=${encodeURIComponent(state.server?.id || "")}`)).channels;
       renderIdentity();
@@ -235,8 +263,8 @@
 
   function openAuth(register = false) {
     state.registerMode = register;
-    elements.authHeading.textContent = register ? "Create your Zorven account" : "Sign in to the community";
-    elements.authCopy.textContent = register ? "Choose a name and a secure password to start chatting." : "Use your account to post messages and create servers.";
+    elements.authHeading.textContent = register ? "Create your Zorven account" : "Sign in to continue";
+    elements.authCopy.textContent = register ? "Choose a name and secure password to unlock messages, rooms, and voice spaces." : "Keep your rooms, direct messages, and voice spaces synced across the Zorven shell.";
     elements.authSubmit.textContent = register ? "Create account" : "Sign in";
     elements.authSwitch.textContent = register ? "Already have an account? Sign in" : "Need an account? Create one";
     elements.authError.textContent = "";
@@ -328,6 +356,8 @@
 
   document.querySelector("#accountButton").addEventListener("click", openAccountSettings);
   elements.directMessagesButton.addEventListener("click", openDirectMessages);
+  elements.openInboxButton.addEventListener("click", openDirectMessages);
+  elements.themeToggle.addEventListener("click", () => applyTheme(state.theme === "light" ? "dark" : "light"));
   document.querySelector("#staffPanelButton").addEventListener("click", openStaffPanel);
   document.querySelector("#adminPanelButton").addEventListener("click", () => window.open("/admin", "_blank"));
   document.querySelector("#logoutButton").addEventListener("click", logout);
@@ -525,6 +555,7 @@
     finally { elements.input.disabled = false; elements.input.focus(); }
   });
 
+  applyTheme(resolveTheme());
   bootstrap().then(() => {
     if (new URLSearchParams(window.location.search).get("register") === "1") openAuth(true);
   });
