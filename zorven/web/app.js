@@ -6,7 +6,7 @@
     shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
   };
   const THEME_STORAGE_KEY = "zorven-theme";
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {}, theme: "dark" };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {}, theme: "dark", lastMessageIdByChannel: {} };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
@@ -32,6 +32,42 @@
   function escapeHtml(value) { const node = document.createElement("span"); node.textContent = value; return node.innerHTML; }
   function formatTime(timestamp) { return timestamp ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(timestamp * 1000)) : "now"; }
   function notify(message) { elements.toast.textContent = message; elements.toast.classList.add("show"); window.clearTimeout(notify.timer); notify.timer = window.setTimeout(() => elements.toast.classList.remove("show"), 3200); }
+  function extractMentionCore(token) {
+    const match = (token || "").match(/^([A-Za-z0-9_-]+)(.*)$/);
+    return { core: (match?.[1] || "").toLowerCase(), suffix: match?.[2] || "" };
+  }
+  function mentionClass(core, username) {
+    if (core === "everyone" || core === "here") return "mention mention-broadcast";
+    if (username && core === username.toLowerCase()) return "mention mention-user";
+    return "";
+  }
+  function formatMessageContent(content, username) {
+    let html = "";
+    let lastIndex = 0;
+    const text = String(content || "");
+    const mentionPattern = /@([^\s@]+)/g;
+    let match;
+    while ((match = mentionPattern.exec(text))) {
+      html += escapeHtml(text.slice(lastIndex, match.index));
+      const token = match[1];
+      const { core, suffix } = extractMentionCore(token);
+      const classes = mentionClass(core, username);
+      if (classes) html += `<span class="${classes}">@${escapeHtml(token.slice(0, token.length - suffix.length))}</span>${escapeHtml(suffix)}`;
+      else html += escapeHtml(match[0]);
+      lastIndex = mentionPattern.lastIndex;
+    }
+    return `${html}${escapeHtml(text.slice(lastIndex))}`;
+  }
+  function messageMentionsUser(content, username) {
+    const text = String(content || "");
+    const mentionPattern = /@([^\s@]+)/g;
+    let match;
+    while ((match = mentionPattern.exec(text))) {
+      const { core } = extractMentionCore(match[1]);
+      if (mentionClass(core, username)) return true;
+    }
+    return false;
+  }
   function resolveTheme() {
     const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     if (storedTheme === "light" || storedTheme === "dark") return storedTheme;
@@ -223,7 +259,7 @@
 
   function messageMarkup(message) {
     const tag = message.role === "staff" ? badgeMarkup(message) : "";
-    return `<article class="message"><span class="avatar">${escapeHtml(initials(message.username))}</span><div><div class="message-meta"><strong>${escapeHtml(message.username)}</strong>${tag}<span class="message-time">${formatTime(message.createdAt)}</span></div><p class="message-body">${escapeHtml(message.content)}</p></div></article>`;
+    return `<article class="message"><span class="avatar">${escapeHtml(initials(message.username))}</span><div><div class="message-meta"><strong>${escapeHtml(message.username)}</strong>${tag}<span class="message-time">${formatTime(message.createdAt)}</span></div><p class="message-body">${formatMessageContent(message.content, state.user?.username)}</p></div></article>`;
   }
 
   async function loadMessages() {
@@ -234,8 +270,16 @@
     elements.messages.innerHTML = `<section class="welcome"><div class="welcome-mark">#</div><p class="eyebrow">CHANNEL OVERVIEW</p><h3>Welcome to #${escapeHtml(elements.title.textContent)}</h3><p>${escapeHtml(elements.description.textContent || `This is the start of the ${elements.title.textContent} channel.`)}</p><div class="welcome-pills"><span>${escapeHtml(state.server?.name || "Community")} room</span><span>Persistent chat history</span><span>Voice-ready channel list</span></div></section>`;
     try {
       const { messages } = await api(`/api/channels/${encodeURIComponent(state.channel)}/messages?serverId=${encodeURIComponent(state.server?.id || "zorven")}`);
+      const previousLastMessageId = state.lastMessageIdByChannel[state.channel];
       elements.messages.insertAdjacentHTML("beforeend", messages.map(messageMarkup).join(""));
       elements.messages.scrollTop = elements.messages.scrollHeight;
+      if (state.user && previousLastMessageId) {
+        const previousIndex = messages.findIndex(message => message.id === previousLastMessageId);
+        const incoming = previousIndex >= 0 ? messages.slice(previousIndex + 1) : [];
+        const pingCount = incoming.filter(message => message.username !== state.user.username && messageMentionsUser(message.content, state.user.username)).length;
+        if (pingCount) notify(`You were pinged ${pingCount} time${pingCount === 1 ? "" : "s"} in #${elements.title.textContent}.`);
+      }
+      if (messages.length) state.lastMessageIdByChannel[state.channel] = messages[messages.length - 1].id;
     } catch (error) { notify(error.message); }
   }
 

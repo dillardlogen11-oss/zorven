@@ -633,6 +633,23 @@ label {
   overflow-wrap: anywhere;
 }
 
+.mention {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.mention-broadcast {
+  background: color-mix(in srgb, #ffbf66 30%, transparent);
+  color: #ffd9a6;
+}
+
+.mention-user {
+  background: color-mix(in srgb, var(--brand-focus) 28%, transparent);
+  color: #b8f3ff;
+}
+
 .composer {
   display: flex;
   gap: 10px;
