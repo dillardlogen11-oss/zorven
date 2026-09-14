@@ -130,6 +130,7 @@ def parse_channel_lines(raw_value, existing_channels=None, allowed_categories=No
 
 def normalize_server_structure(server):
     server["categories"] = dedupe_names(server.get("categories", []))
+    known_categories = {category.lower(): category for category in server["categories"]}
     normalized_channels = []
     seen = set()
     for channel in server_channels(server):
@@ -137,17 +138,16 @@ def normalize_server_structure(server):
         if not name or name.lower() in seen:
             continue
         seen.add(name.lower())
+        category_name = normalize_label(channel.get("category", ""), 40)
         normalized_channels.append(
             {
                 "id": channel.get("id") or secrets.token_hex(5),
                 "name": name,
                 "description": normalize_label(channel.get("description", ""), 120),
-                "category": normalize_label(channel.get("category", ""), 40),
+                "category": known_categories.get(category_name.lower(), "") if category_name else "",
             }
         )
     server["channels"] = normalized_channels
-    implied_categories = [channel["category"] for channel in normalized_channels if channel["category"]]
-    server["categories"] = dedupe_names([*server["categories"], *implied_categories])
     server.setdefault("roles", [])
     return server
 

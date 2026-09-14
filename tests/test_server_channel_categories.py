@@ -47,7 +47,7 @@ def test_parse_channel_lines_preserves_existing_category_without_prefix():
     ]
 
 
-def test_normalize_server_structure_dedupes_and_syncs_categories():
+def test_normalize_server_structure_dedupes_and_drops_unknown_categories():
     server = {
         "id": "demo",
         "categories": ["Roadmap", "roadmap", " "],
@@ -60,10 +60,29 @@ def test_normalize_server_structure_dedupes_and_syncs_categories():
 
     normalize_server_structure(server)
 
-    assert server["categories"] == ["Roadmap", "Lounge"]
+    assert server["categories"] == ["Roadmap"]
     assert server["channels"] == [
         {"id": "1", "name": "updates", "description": "Official notes", "category": "Roadmap"},
-        {"id": "2", "name": "chat", "description": "General chat", "category": "Lounge"},
+        {"id": "2", "name": "chat", "description": "General chat", "category": ""},
+    ]
+
+
+def test_normalize_server_structure_clears_unknown_channel_categories():
+    server = {
+        "id": "demo",
+        "categories": ["Roadmap"],
+        "channels": [
+            {"id": "1", "name": "updates", "description": "Official notes", "category": "Roadmap"},
+            {"id": "2", "name": "chat", "description": "General chat", "category": "Unknown"},
+        ],
+    }
+
+    normalize_server_structure(server)
+
+    assert server["categories"] == ["Roadmap"]
+    assert server["channels"] == [
+        {"id": "1", "name": "updates", "description": "Official notes", "category": "Roadmap"},
+        {"id": "2", "name": "chat", "description": "General chat", "category": ""},
     ]
 
 
