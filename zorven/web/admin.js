@@ -4,12 +4,23 @@
     loginGate: document.querySelector("#loginGate"), content: document.querySelector("#adminContent"), identity: document.querySelector("#adminIdentity"),
     username: document.querySelector("#adminUsername"), password: document.querySelector("#adminPassword"), loginButton: document.querySelector("#adminLoginButton"), loginError: document.querySelector("#loginError"),
     logoutButton: document.querySelector("#adminLogoutButton"), statsGrid: document.querySelector("#statsGrid"), usersTable: document.querySelector("#usersTable"), usersError: document.querySelector("#usersError"),
-    search: document.querySelector("#userSearch"), refresh: document.querySelector("#refreshUsers"), refreshReviews: document.querySelector("#refreshReviews"), reviewsEmpty: document.querySelector("#reviewsEmpty"), reviewsTable: document.querySelector("#reviewsTable"), clearQueue: document.querySelector("#clearQueueButton"), clearMessages: document.querySelector("#clearMessagesButton"), exportData: document.querySelector("#exportDataButton"), maintenanceToggle: document.querySelector("#maintenanceToggle"), maintenanceStatus: document.querySelector("#maintenanceStatus"),
+    search: document.querySelector("#userSearch"), refresh: document.querySelector("#refreshUsers"), refreshReviews: document.querySelector("#refreshReviews"), reviewsEmpty: document.querySelector("#reviewsEmpty"), reviewsTable: document.querySelector("#reviewsTable"), clearQueue: document.querySelector("#clearQueueButton"), clearSessions: document.querySelector("#clearSessionsButton"), clearMessages: document.querySelector("#clearMessagesButton"), exportData: document.querySelector("#exportDataButton"), maintenanceToggle: document.querySelector("#maintenanceToggle"), maintenanceStatus: document.querySelector("#maintenanceStatus"),
     toast: document.querySelector("#toast"),
   };
 
   function escapeHtml(value) { const node = document.createElement("span"); node.textContent = value; return node.innerHTML; }
   function notify(message) { elements.toast.textContent = message; elements.toast.classList.add("show"); window.clearTimeout(notify.timer); notify.timer = window.setTimeout(() => elements.toast.classList.remove("show"), 3200); }
+  function resetSession(message = "You have been signed out.") {
+    state.token = "";
+    state.user = null;
+    localStorage.removeItem("zorven-token");
+    elements.logoutButton.hidden = true;
+    elements.loginGate.hidden = false;
+    elements.content.hidden = true;
+    elements.identity.textContent = "";
+    elements.loginError.textContent = "";
+    if (message) notify(message);
+  }
 
   async function api(path, options = {}) {
     const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) };
@@ -39,15 +50,7 @@
     } catch (error) {
       notify(error.message);
     } finally {
-      state.token = "";
-      state.user = null;
-      localStorage.removeItem("zorven-token");
-      elements.logoutButton.hidden = true;
-      elements.loginGate.hidden = false;
-      elements.content.hidden = true;
-      elements.identity.textContent = "";
-      elements.loginError.textContent = "";
-      notify("You have been signed out.");
+      resetSession();
     }
   }
 
@@ -132,6 +135,14 @@
 
   elements.clearQueue.addEventListener("click", async () => {
     try { const result = await command("clear_queue"); notify(`Cleared ${result.removed} queued players.`); await loadStats(); } catch (error) { notify(error.message); }
+  });
+
+  elements.clearSessions.addEventListener("click", async () => {
+    if (!window.confirm("Clear every active session? This will sign out every account, including yours.")) return;
+    try {
+      const result = await command("clear_sessions");
+      resetSession(`Cleared ${result.removed} active sessions. Sign in again to continue.`);
+    } catch (error) { notify(error.message); }
   });
 
   elements.clearMessages.addEventListener("click", async () => {
