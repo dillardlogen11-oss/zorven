@@ -744,6 +744,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 save_data()
                 self._send_json({"cleared": True, "removed": removed})
                 return
+            if command == "clear_sessions":
+                removed = len(DATA["sessions"])
+                DATA["sessions"] = {}
+                save_data()
+                self._send_json({"cleared": True, "removed": removed})
+                return
             if command == "delete_user":
                 username = str(args.get("username", "")).strip().lower()
                 if username in {"", actor["username"], "admin"} or username not in DATA["users"]:
