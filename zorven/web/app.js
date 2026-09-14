@@ -97,7 +97,8 @@
   }
 
   function toggleCategory(categoryName) {
-    state.collapsedCategories[categoryName] = !state.collapsedCategories[categoryName];
+    const key = categoryName.toLowerCase();
+    state.collapsedCategories[key] = !state.collapsedCategories[key];
     renderChannels();
   }
 
@@ -123,7 +124,7 @@
     const categorySections = categoryNames.map(category => {
       const channels = visibleChannels.filter(channel => (channel.category || "").toLowerCase() === category.toLowerCase());
       if (!channels.length) return "";
-      const collapsed = !!state.collapsedCategories[category];
+      const collapsed = !!state.collapsedCategories[category.toLowerCase()];
       return `<section class="channel-group"><button class="channel-group-toggle" type="button" data-category-toggle="${escapeHtml(category)}" aria-expanded="${String(!collapsed)}"><span class="channel-group-chevron">${collapsed ? "▸" : "▾"}</span>${escapeHtml(category)}</button>${collapsed ? "" : channels.map(channel => `<button class="channel-button ${channel.id === state.channel ? "active" : ""}" type="button" data-channel="${escapeHtml(channel.id)}"><span class="hash">#</span>${escapeHtml(channel.name)}</button>`).join("")}</section>`;
     }).join("");
     const uncategorizedChannels = visibleChannels.filter(channel => !channel.category);

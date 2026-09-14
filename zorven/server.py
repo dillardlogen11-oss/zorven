@@ -93,8 +93,9 @@ def dedupe_names(values):
     return result
 
 
-def parse_channel_lines(raw_value, existing_channels=None):
+def parse_channel_lines(raw_value, existing_channels=None, allowed_categories=None):
     existing_channels = existing_channels or {}
+    allowed_categories = {normalize_label(category, 40).lower() for category in (allowed_categories or []) if normalize_label(category, 40)}
     parsed_channels = []
     seen = set()
     for raw_line in str(raw_value or "").splitlines():
@@ -103,11 +104,11 @@ def parse_channel_lines(raw_value, existing_channels=None):
             continue
         category_name = ""
         channel_name = line
-        if ">" in line:
-            possible_category, _, possible_name = line.partition(">")
+        if " > " in line:
+            possible_category, _, possible_name = line.partition(" > ")
             normalized_category = normalize_label(possible_category, 40)
             normalized_name = normalize_label(possible_name, 40)
-            if normalized_category and normalized_name:
+            if normalized_category and normalized_name and normalized_category.lower() in allowed_categories:
                 category_name = normalized_category
                 channel_name = normalized_name
         channel_name = normalize_label(channel_name, 40)
@@ -115,7 +116,7 @@ def parse_channel_lines(raw_value, existing_channels=None):
             continue
         seen.add(channel_name.lower())
         existing = existing_channels.get(channel_name.lower(), {})
-        explicit_category = ">" in line and bool(category_name)
+        explicit_category = bool(category_name)
         parsed_channels.append(
             {
                 "id": existing.get("id", secrets.token_hex(5)),
@@ -534,7 +535,8 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             server["name"] = name
             server["description"] = description
             existing_channels = {channel["name"].lower(): channel for channel in server_channels(server)}
-            server["channels"] = parse_channel_lines(payload.get("channels", ""), existing_channels)
+            allowed_categories = dedupe_names([*server.get("categories", []), *category_names])
+            server["channels"] = parse_channel_lines(payload.get("channels", ""), existing_channels, allowed_categories)
             server["roles"] = role_names
             implied_categories = [channel["category"] for channel in server["channels"] if channel["category"]]
             server["categories"] = dedupe_names([*category_names, *implied_categories])

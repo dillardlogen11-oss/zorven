@@ -11,7 +11,7 @@ def test_parse_channel_lines_supports_category_prefix():
         }
     }
 
-    parsed = parse_channel_lines("Community > announcements\ngeneral", existing)
+    parsed = parse_channel_lines("Community > announcements\ngeneral", existing, ["Community"])
 
     assert parsed[0] == {
         "id": "existing-channel",
@@ -35,7 +35,7 @@ def test_parse_channel_lines_preserves_existing_category_without_prefix():
         }
     }
 
-    parsed = parse_channel_lines("general", existing)
+    parsed = parse_channel_lines("general", existing, ["Lobby"])
 
     assert parsed == [
         {
@@ -65,3 +65,14 @@ def test_normalize_server_structure_dedupes_and_syncs_categories():
         {"id": "1", "name": "updates", "description": "Official notes", "category": "Roadmap"},
         {"id": "2", "name": "chat", "description": "General chat", "category": "Lounge"},
     ]
+
+
+def test_parse_channel_lines_falls_back_for_malformed_or_unknown_category_syntax():
+    parsed = parse_channel_lines("Unknown > alpha\nRoadmap >\nfoo>bar>baz", {}, ["Roadmap"])
+
+    assert parsed == [
+        {"id": parsed[0]["id"], "name": "Unknown > alpha", "description": "", "category": ""},
+        {"id": parsed[1]["id"], "name": "Roadmap >", "description": "", "category": ""},
+        {"id": parsed[2]["id"], "name": "foo>bar>baz", "description": "", "category": ""},
+    ]
+    assert all(channel["id"] for channel in parsed)
