@@ -144,7 +144,8 @@ select {
 
 .server-mark:hover,
 .server-mark.active,
-.home-mark:hover {
+.home-mark:hover,
+.home-mark.active {
   border-radius: 16px;
   transform: translateY(-1px);
 }
@@ -156,7 +157,8 @@ select {
 
 .server-mark.active::before,
 .server-mark:hover::before,
-.home-mark:hover::before {
+.home-mark:hover::before,
+.home-mark.active::before {
   content: "";
   position: absolute;
   left: -11px;
@@ -903,14 +905,59 @@ label {
 .direct-messages-list {
   display: grid;
   gap: 10px;
-  max-height: 420px;
+  padding: 0 20px 20px;
+  max-height: 100%;
   overflow-y: auto;
+}
+
+.direct-messages-screen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.direct-messages-welcome {
+  margin: 0;
+  padding: 20px 20px 12px;
 }
 
 .direct-message {
   padding: 14px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.direct-message-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.direct-message-meta strong,
+.direct-message-meta small {
+  display: block;
+}
+
+.direct-message-subject {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.direct-message-status {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+  color: #dfe3ff;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .settings-dialog {
@@ -1116,7 +1163,9 @@ label {
 
   .shell-banner,
   .messages,
-  .composer {
+  .composer,
+  .direct-messages-list,
+  .direct-messages-welcome {
     padding-left: 16px;
     padding-right: 16px;
   }

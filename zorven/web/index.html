@@ -75,7 +75,7 @@
     <section class="chat-panel">
       <header class="chat-header">
         <button class="mobile-menu icon-button" id="menuButton" type="button" aria-label="Open channels">&#9776;</button>
-        <span class="hash">#</span>
+        <span class="hash" id="chatHeaderIcon" role="img" aria-label="Channel">#</span>
         <div class="chat-header-copy">
           <h2 id="channelTitle">general</h2>
           <p id="channelDescription">Loading channel...</p>
@@ -93,6 +93,15 @@
           <p class="shell-banner-copy" id="serverBannerDescription">Loading your server experience...</p>
         </div>
         <div class="shell-banner-meta" id="serverBannerStats"></div>
+      </section>
+      <section class="direct-messages-screen" id="directMessagesScreen" aria-live="polite" hidden>
+        <section class="welcome direct-messages-welcome">
+          <div class="welcome-mark">&#9993;</div>
+          <p class="eyebrow">DIRECT MESSAGES</p>
+          <h3>Direct messages</h3>
+          <p>Private updates from Zorven staff open here in the main shell instead of a popup.</p>
+        </section>
+        <div id="directMessagesList" class="direct-messages-list"></div>
       </section>
       <div class="messages" id="messages" aria-live="polite"></div>
       <form class="composer" id="messageForm">
@@ -175,15 +184,6 @@
       <label>DESCRIPTION<textarea id="serverCreateDescriptionInput" maxlength="180" rows="3" placeholder="What is this server about?"></textarea></label>
       <p class="form-error" id="serverError" role="alert"></p>
       <button class="primary-button" value="default" type="submit">Create server</button>
-    </form>
-  </dialog>
-
-  <dialog id="directMessagesDialog" class="dialog direct-messages-dialog">
-    <form method="dialog" class="dialog-card">
-      <button class="dialog-close" value="cancel" type="submit" formnovalidate aria-label="Close">&#215;</button>
-      <p class="eyebrow">DIRECT MESSAGES</p>
-      <h2>Direct messages</h2>
-      <div id="directMessagesList" class="direct-messages-list"></div>
     </form>
   </dialog>
 
