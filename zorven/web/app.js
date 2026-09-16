@@ -86,7 +86,7 @@
     const roster = [...state.team];
     if (state.user && !roster.some(member => member.username === state.user.username)) roster.unshift(state.user);
     elements.serverBannerName.textContent = server?.name || "Zorven";
-    elements.serverBannerDescription.textContent = server?.description || "A Fluxer-inspired shell for messages, rooms, and lightweight voice spaces.";
+    elements.serverBannerDescription.textContent = server?.description || "A Fluxer shell for messages, rooms, and lightweight voice spaces.";
     elements.serverBannerStats.innerHTML = [
       `${state.channels.length} channel${state.channels.length === 1 ? "" : "s"}`,
       `${Math.max(roster.length, 1)} member${Math.max(roster.length, 1) === 1 ? "" : "s"}`,

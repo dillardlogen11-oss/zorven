@@ -1,9 +1,6 @@
 .login-body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(70, 65, 217, 0.34), transparent 30%),
-    radial-gradient(circle at right center, rgba(0, 176, 244, 0.16), transparent 24%),
-    var(--background-base);
+  background: var(--background-base);
 }
 
 .login-shell {
@@ -118,16 +115,16 @@
 .preview-panel,
 .login-card {
   border: 1px solid var(--line);
-  background: rgba(24, 27, 33, 0.76);
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(14px);
+  background: var(--background-secondary);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .metric-card {
   display: grid;
   gap: 8px;
   padding: 18px;
-  border-radius: 18px;
+  border-radius: 8px;
 }
 
 .metric-card strong {
@@ -144,7 +141,7 @@
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
   min-height: 280px;
-  border-radius: 28px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -154,7 +151,7 @@
   align-content: start;
   gap: 12px;
   padding: 20px 0;
-  background: rgba(13, 15, 19, 0.72);
+  background: var(--surface-floating);
 }
 
 .preview-server {
@@ -205,12 +202,12 @@
   display: grid;
   gap: 6px;
   padding: 16px 18px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  background: rgba(79, 84, 92, 0.18);
 }
 
 .preview-bubble.large {
-  background: linear-gradient(135deg, rgba(70, 65, 217, 0.28), rgba(0, 176, 244, 0.14));
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.4), rgba(71, 82, 196, 0.36));
 }
 
 .preview-bubble span {
@@ -222,7 +219,7 @@
   display: grid;
   gap: 24px;
   padding: 30px;
-  border-radius: 28px;
+  border-radius: 8px;
 }
 
 .login-card-copy {
