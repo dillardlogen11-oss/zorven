@@ -1152,7 +1152,9 @@ label {
 
   .shell-banner,
   .messages,
-  .composer {
+  .composer,
+  .direct-messages-list,
+  .direct-messages-welcome {
     padding-left: 16px;
     padding-right: 16px;
   }
