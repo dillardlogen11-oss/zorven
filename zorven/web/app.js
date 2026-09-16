@@ -98,6 +98,7 @@
     state.view = view === "directMessages" ? "directMessages" : "channel";
     const showingDirectMessages = state.view === "directMessages";
     elements.chatHeaderIcon.innerHTML = showingDirectMessages ? "&#9993;" : "#";
+    elements.chatHeaderIcon.setAttribute("aria-label", showingDirectMessages ? "Direct messages" : "Channel");
     elements.directMessagesButton.classList.toggle("active", showingDirectMessages);
     elements.shellBanner.hidden = showingDirectMessages;
     elements.messages.hidden = showingDirectMessages;
@@ -121,9 +122,9 @@
   }
 
   async function loadDirectMessages({ markRead = false } = {}) {
+    if (markRead) await api("/api/dms/read", { method: "POST" });
     const messages = (await api("/api/dms")).messages;
     renderDirectMessages(messages);
-    if (markRead) await api("/api/dms/read", { method: "POST" });
   }
 
   async function openDirectMessages() {

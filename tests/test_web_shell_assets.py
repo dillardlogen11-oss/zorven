@@ -29,6 +29,7 @@ def test_login_and_app_shell_expose_fluxer_style_controls():
     assert 'id="serverBannerStats"' in app_html
     assert 'id="directMessagesScreen"' in app_html
     assert 'id="directMessagesDialog"' not in app_html
+    assert 'id="chatHeaderIcon" role="img" aria-label="Channel"' in app_html
 
 
 def test_app_shell_default_banner_copy_matches_fluxer_shell_wording():
@@ -42,5 +43,6 @@ def test_direct_messages_open_in_shell_view_instead_of_modal():
     styles = (WEB_ROOT / "styles.css").read_text(encoding="utf-8")
 
     assert 'elements.directMessagesScreen.hidden = !showingDirectMessages;' in app_js
+    assert 'elements.chatHeaderIcon.setAttribute("aria-label", showingDirectMessages ? "Direct messages" : "Channel");' in app_js
     assert '.direct-messages-screen {' in styles
     assert '.home-mark.active' in styles
