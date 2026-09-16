@@ -48,3 +48,4 @@ def test_resolve_web_route_handles_entry_points():
     assert resolve_web_route("/server") == "index.html"
     assert resolve_web_route("/app") == "index.html"
     assert resolve_web_route("/admin") == "admin.html"
+    assert resolve_web_route("/maintenance") is None

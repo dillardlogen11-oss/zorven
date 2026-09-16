@@ -49,3 +49,64 @@ def test_admin_command_can_clear_all_sessions(monkeypatch):
         httpd.server_close()
         thread.join(timeout=5)
         monkeypatch.setattr(server, "DATA", original_data)
+
+
+def test_public_status_route_redirects_to_admin_site(monkeypatch):
+    original_data = server.DATA
+    test_data = {
+        "users": {},
+        "sessions": {},
+        "queue": [],
+        "orders": [],
+        "messages": [],
+        "voice": {},
+        "servers": {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}},
+        "maintenanceMode": False,
+        "directMessages": [],
+        "serverReviews": [],
+    }
+    monkeypatch.setattr(server, "DATA", test_data)
+
+    httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.ZorvenHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urlopen(f"http://127.0.0.1:{httpd.server_port}/maintenance") as response:
+            html = response.read().decode("utf-8")
+            assert response.geturl().endswith("/admin")
+        assert "Admin console" in html
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=5)
+        monkeypatch.setattr(server, "DATA", original_data)
+
+
+def test_maintenance_mode_still_serves_maintenance_page_on_community_routes(monkeypatch):
+    original_data = server.DATA
+    test_data = {
+        "users": {},
+        "sessions": {},
+        "queue": [],
+        "orders": [],
+        "messages": [],
+        "voice": {},
+        "servers": {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}},
+        "maintenanceMode": True,
+        "directMessages": [],
+        "serverReviews": [],
+    }
+    monkeypatch.setattr(server, "DATA", test_data)
+
+    httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.ZorvenHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urlopen(f"http://127.0.0.1:{httpd.server_port}/server") as response:
+            html = response.read().decode("utf-8")
+        assert "We are polishing the next community release." in html
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=5)
+        monkeypatch.setattr(server, "DATA", original_data)

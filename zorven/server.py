@@ -292,9 +292,6 @@ def resolve_web_route(path):
         "/admin": "admin.html",
         "/admin.html": "admin.html",
         "/zorven-admin": "admin.html",
-        "/maintenance": "maintenance.html",
-        "/maintenance.html": "maintenance.html",
-        "/zorven-maintenance": "maintenance.html",
         "/manifest.json": "manifest.json",
     }
     return route_map.get(normalized)
@@ -342,6 +339,12 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Security-Policy", "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:")
         self.end_headers()
         self.wfile.write(body)
+
+    def _send_redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
 
     def _send_download(self):
         body = build_client_bundle()
@@ -411,7 +414,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         elif path in {"/admin", "/zorven-admin", "/admin.html"}:
             self._send_file("admin.html", "text/html; charset=utf-8")
         elif path in {"/maintenance", "/zorven-maintenance", "/maintenance.html"}:
-            self._send_file("maintenance.html", "text/html; charset=utf-8")
+            self._send_redirect("/admin")
         elif path in {"/server.html", "/app.html"}:
             self._send_file("index.html", "text/html; charset=utf-8")
         elif path == "/app.js":

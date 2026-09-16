@@ -11,8 +11,9 @@ Requires Python 3.10 or newer. From the repository root:
 python3 zorven/server.py
 ```
 
-Open `http://127.0.0.1:8765/login` in a browser. The custom maintenance page is
-available at `http://127.0.0.1:8765/maintenance`. On Windows, run
+Open `http://127.0.0.1:8765/login` in a browser. Staff can use the separate admin
+website at `http://127.0.0.1:8765/admin`. When maintenance mode is enabled, the
+community routes render the maintenance page automatically. On Windows, run
 `zorven/start_zorven.bat` instead.
 
 ## Desktop and mobile app notes

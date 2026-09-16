@@ -39,9 +39,12 @@ def test_login_and_app_shell_expose_fluxer_style_controls():
 
     assert "Fluxer community shell" in login_html
     assert 'id="themeToggleButton"' in login_html
+    assert 'href="/admin"' in login_html
+    assert 'href="/maintenance"' not in login_html
     assert 'href="/download/zorven-client"' in login_html
     assert "FLUXER SHELL" in app_html
     assert 'id="serverBannerStats"' in app_html
+    assert 'href="/maintenance"' not in app_html
     assert "directMessagesDialog" not in parser.elements
     assert parser.elements["directMessagesScreen"]["tag"] == "section"
     assert "hidden" in parser.elements["directMessagesScreen"]["attrs"]
