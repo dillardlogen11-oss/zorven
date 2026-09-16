@@ -122,9 +122,12 @@
   }
 
   async function loadDirectMessages({ markRead = false } = {}) {
-    if (markRead) await api("/api/dms/read", { method: "POST" });
     const messages = (await api("/api/dms")).messages;
     renderDirectMessages(messages);
+    if (markRead) {
+      await api("/api/dms/read", { method: "POST" });
+      renderDirectMessages((await api("/api/dms")).messages);
+    }
   }
 
   async function openDirectMessages() {
