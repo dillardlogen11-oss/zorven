@@ -1,8 +1,15 @@
 import json
 import threading
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from zorven import server
+
+
+class NoRedirectHandler(HTTPRedirectHandler):
+    def http_error_302(self, req, fp, code, msg, headers):
+        return fp
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
 
 
 def test_admin_shell_exposes_clear_sessions_control():
@@ -71,11 +78,11 @@ def test_public_status_route_redirects_to_admin_site(monkeypatch):
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     try:
+        opener = build_opener(NoRedirectHandler)
         for path in ("/maintenance", "/maintenance.html", "/zorven-maintenance"):
-            with urlopen(f"http://127.0.0.1:{httpd.server_port}{path}") as response:
-                html = response.read().decode("utf-8")
-                assert response.geturl().endswith("/admin")
-            assert "Admin console" in html
+            with opener.open(f"http://127.0.0.1:{httpd.server_port}{path}") as response:
+                assert response.status == 302
+                assert response.headers["Location"] == "/admin"
     finally:
         httpd.shutdown()
         httpd.server_close()
