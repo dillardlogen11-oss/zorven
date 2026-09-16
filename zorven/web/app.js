@@ -125,10 +125,6 @@
     elements.directMessagesList.innerHTML = messages.length
       ? messages.map(directMessageMarkup).join("")
       : `<p class="dialog-copy">No direct messages yet.</p>`;
-    document.querySelectorAll("[data-direct-message-user]").forEach(card => card.addEventListener("click", () => {
-      elements.directMessageRecipient.value = card.dataset.directMessageUser || "";
-      elements.input.focus();
-    }));
   }
 
   async function loadDirectMessages({ markRead = false } = {}) {
@@ -474,6 +470,12 @@
   document.querySelector("#accountButton").addEventListener("click", openAccountSettings);
   elements.directMessagesButton.addEventListener("click", openDirectMessages);
   elements.openInboxButton.addEventListener("click", openDirectMessages);
+  elements.directMessagesList.addEventListener("click", event => {
+    const card = event.target.closest("[data-direct-message-user]");
+    if (!card) return;
+    elements.directMessageRecipient.value = card.dataset.directMessageUser || "";
+    elements.input.focus();
+  });
   elements.themeToggle.addEventListener("click", () => applyTheme(state.theme === "light" ? "dark" : "light"));
   document.querySelector("#staffPanelButton").addEventListener("click", openStaffPanel);
   document.querySelector("#adminPanelButton").addEventListener("click", () => window.open("/admin", "_blank"));

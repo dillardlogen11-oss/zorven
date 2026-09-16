@@ -140,3 +140,46 @@ def test_public_dm_directory_excludes_self_and_unavailable_users(monkeypatch):
         httpd.server_close()
         thread.join(timeout=5)
         monkeypatch.setattr(server, "DATA", original_data)
+
+
+def test_public_direct_messages_reject_self_target(monkeypatch):
+    original_data = server.DATA
+    test_data = {
+        "users": {
+            "alice": {"username": "alice", "password": "unused", "role": "member"},
+        },
+        "sessions": {"alice-token": "alice"},
+        "queue": [],
+        "orders": [],
+        "messages": [],
+        "voice": {},
+        "servers": {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}},
+        "maintenanceMode": False,
+        "directMessages": [],
+        "serverReviews": [],
+    }
+    monkeypatch.setattr(server, "DATA", test_data)
+    monkeypatch.setattr(server, "save_data", lambda: None)
+
+    httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.ZorvenHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{httpd.server_port}/api/dms",
+            data=json.dumps({"to": "alice", "content": "hey"}).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Authorization": "Bearer " + "alice-token"},
+            method="POST",
+        )
+        try:
+            urlopen(request)
+            assert False, "Expected an HTTPError"
+        except HTTPError as error:
+            payload = json.loads(error.read().decode("utf-8"))
+            assert error.code == 400
+            assert payload == {"error": "You cannot direct message yourself"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=5)
+        monkeypatch.setattr(server, "DATA", original_data)
