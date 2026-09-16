@@ -37,7 +37,7 @@ def test_admin_command_can_clear_all_sessions(monkeypatch):
         request = Request(
             f"http://127.0.0.1:{httpd.server_port}/api/admin/command",
             data=json.dumps({"command": "clear_sessions"}).encode("utf-8"),
-            headers={"Content-Type": "application/json", "Authorization": "******"},
+            headers={"Content-Type": "application/json", "Authorization": "Bearer " + "admin-token"},
             method="POST",
         )
         with urlopen(request) as response:
