@@ -945,10 +945,15 @@ label {
 }
 
 .direct-message {
+  width: 100%;
+  border: 0;
   padding: 14px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
 
 .direct-message-meta {

@@ -115,7 +115,7 @@
     const subject = message.subject ? `<span class="direct-message-subject">${escapeHtml(message.subject)}</span>` : "";
     const status = !message.read && message.to === state.user.username ? `<span class="direct-message-status">New</span>` : "";
     const otherUser = message.from === state.user.username ? message.to : message.from;
-    return `<article class="direct-message" data-direct-message-user="${escapeHtml(otherUser)}"><div class="direct-message-meta"><div><strong>${escapeHtml(direction)}</strong>${subject}${status}</div><small>${formatTime(message.createdAt)}</small></div><p>${formatMessageContent(message.content, state.user?.username)}</p></article>`;
+    return `<button type="button" class="direct-message" data-direct-message-user="${escapeHtml(otherUser)}" aria-label="Reply to ${escapeHtml(otherUser)}"><div class="direct-message-meta"><div><strong>${escapeHtml(direction)}</strong>${subject}${status}</div><small>${formatTime(message.createdAt)}</small></div><p>${formatMessageContent(message.content, state.user?.username)}</p></button>`;
   }
 
   function renderDirectMessages(messages) {
@@ -682,8 +682,7 @@
     finally {
       elements.input.disabled = false;
       elements.directMessageRecipient.disabled = false;
-      if (state.view === "directMessages") elements.directMessageRecipient.focus();
-      else elements.input.focus();
+      elements.input.focus();
     }
   });
 
