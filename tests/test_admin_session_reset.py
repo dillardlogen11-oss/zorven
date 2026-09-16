@@ -71,10 +71,11 @@ def test_public_status_route_redirects_to_admin_site(monkeypatch):
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     try:
-        with urlopen(f"http://127.0.0.1:{httpd.server_port}/maintenance") as response:
-            html = response.read().decode("utf-8")
-            assert response.geturl().endswith("/admin")
-        assert "Admin console" in html
+        for path in ("/maintenance", "/maintenance.html", "/zorven-maintenance"):
+            with urlopen(f"http://127.0.0.1:{httpd.server_port}{path}") as response:
+                html = response.read().decode("utf-8")
+                assert response.geturl().endswith("/admin")
+            assert "Admin console" in html
     finally:
         httpd.shutdown()
         httpd.server_close()
