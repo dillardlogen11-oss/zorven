@@ -27,9 +27,20 @@ def test_login_and_app_shell_expose_fluxer_style_controls():
     assert 'href="/download/zorven-client"' in login_html
     assert "FLUXER SHELL" in app_html
     assert 'id="serverBannerStats"' in app_html
+    assert 'id="directMessagesScreen"' in app_html
+    assert 'id="directMessagesDialog"' not in app_html
 
 
 def test_app_shell_default_banner_copy_matches_fluxer_shell_wording():
     app_js = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
 
     assert "A Fluxer shell for messages, rooms, and lightweight voice spaces." in app_js
+
+
+def test_direct_messages_open_in_shell_view_instead_of_modal():
+    app_js = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
+    styles = (WEB_ROOT / "styles.css").read_text(encoding="utf-8")
+
+    assert 'elements.directMessagesScreen.hidden = !showingDirectMessages;' in app_js
+    assert '.direct-messages-screen {' in styles
+    assert '.home-mark.active' in styles

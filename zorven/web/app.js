@@ -6,7 +6,7 @@
     shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
   };
   const THEME_STORAGE_KEY = "zorven-theme";
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {}, theme: "dark", lastMessageIdByChannel: {} };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", view: "channel", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {}, theme: "dark", lastMessageIdByChannel: {} };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
@@ -15,7 +15,7 @@
     serverSettingsDialog: document.querySelector("#serverSettingsDialog"), serverSettingsForm: document.querySelector("#serverSettingsForm"), serverSettingsName: document.querySelector("#serverSettingsName"), serverDescription: document.querySelector("#serverDescriptionInput"), serverCategories: document.querySelector("#serverCategoriesInput"), serverChannels: document.querySelector("#serverChannelsInput"), serverRoles: document.querySelector("#serverRolesInput"), serverSettingsError: document.querySelector("#serverSettingsError"),
     createChannelDialog: document.querySelector("#createChannelDialog"), createChannelForm: document.querySelector("#createChannelForm"), channelName: document.querySelector("#channelNameInput"), channelCategory: document.querySelector("#channelCategoryInput"), channelDescription: document.querySelector("#channelDescriptionInput"), channelCreateError: document.querySelector("#channelCreateError"),
     createCategoryDialog: document.querySelector("#createCategoryDialog"), createCategoryForm: document.querySelector("#createCategoryForm"), categoryName: document.querySelector("#categoryNameInput"), categoryCreateError: document.querySelector("#categoryCreateError"),
-    serverList: document.querySelector("#serverList"), directMessagesButton: document.querySelector("#directMessagesButton"), directMessagesDialog: document.querySelector("#directMessagesDialog"), directMessagesList: document.querySelector("#directMessagesList"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton"), themeToggle: document.querySelector("#themeToggleButton"), openInboxButton: document.querySelector("#openInboxButton"), serverBannerName: document.querySelector("#serverBannerName"), serverBannerDescription: document.querySelector("#serverBannerDescription"), serverBannerStats: document.querySelector("#serverBannerStats")
+    serverList: document.querySelector("#serverList"), directMessagesButton: document.querySelector("#directMessagesButton"), directMessagesScreen: document.querySelector("#directMessagesScreen"), directMessagesList: document.querySelector("#directMessagesList"), chatHeaderIcon: document.querySelector("#chatHeaderIcon"), shellBanner: document.querySelector(".shell-banner"), channelList: document.querySelector("#channelList"), voiceChannelList: document.querySelector("#voiceChannelList"), title: document.querySelector("#channelTitle"), description: document.querySelector("#channelDescription"), messages: document.querySelector("#messages"), form: document.querySelector("#messageForm"), input: document.querySelector("#messageInput"), selfName: document.querySelector("#selfName"), selfStatus: document.querySelector("#selfStatus"), selfAvatar: document.querySelector("#selfAvatar"), memberList: document.querySelector("#memberList"), memberCount: document.querySelector("#memberCount"), onlineCount: document.querySelector("#onlineCount"), toast: document.querySelector("#toast"), panel: document.querySelector("#channelPanel"), staffPanel: document.querySelector("#staffPanelButton"), adminPanel: document.querySelector("#adminPanelButton"), themeToggle: document.querySelector("#themeToggleButton"), openInboxButton: document.querySelector("#openInboxButton"), serverBannerName: document.querySelector("#serverBannerName"), serverBannerDescription: document.querySelector("#serverBannerDescription"), serverBannerStats: document.querySelector("#serverBannerStats")
   };
   async function api(path, options = {}) {
     const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) };
@@ -94,13 +94,43 @@
     ].map(label => `<span class="stat-chip">${escapeHtml(label)}</span>`).join("");
   }
 
+  function setView(view) {
+    state.view = view === "directMessages" ? "directMessages" : "channel";
+    const showingDirectMessages = state.view === "directMessages";
+    elements.chatHeaderIcon.innerHTML = showingDirectMessages ? "&#9993;" : "#";
+    elements.directMessagesButton.classList.toggle("active", showingDirectMessages);
+    elements.shellBanner.hidden = showingDirectMessages;
+    elements.messages.hidden = showingDirectMessages;
+    elements.form.hidden = showingDirectMessages;
+    elements.directMessagesScreen.hidden = !showingDirectMessages;
+  }
+
+  function directMessageMarkup(message) {
+    const direction = message.from === state.user.username ? `To ${message.to}` : `From ${message.from}`;
+    const subject = message.subject ? `<span class="direct-message-subject">${escapeHtml(message.subject)}</span>` : "";
+    return `<article class="direct-message"><div class="direct-message-meta"><div><strong>${escapeHtml(direction)}</strong>${subject}</div><small>${formatTime(message.createdAt)}</small></div><p>${escapeHtml(message.content)}</p></article>`;
+  }
+
+  function renderDirectMessages(messages) {
+    setView("directMessages");
+    elements.title.textContent = "Direct messages";
+    elements.description.textContent = "Private updates from Zorven staff.";
+    elements.directMessagesList.innerHTML = messages.length
+      ? messages.map(directMessageMarkup).join("")
+      : `<p class="dialog-copy">No direct messages yet.</p>`;
+  }
+
+  async function loadDirectMessages({ markRead = false } = {}) {
+    const messages = (await api("/api/dms")).messages;
+    renderDirectMessages(messages);
+    if (markRead) await api("/api/dms/read", { method: "POST" });
+  }
+
   async function openDirectMessages() {
     if (!state.user) return openAuth();
     try {
-      const messages = (await api("/api/dms")).messages;
-      elements.directMessagesList.innerHTML = messages.length ? messages.map(message => `<article class="direct-message"><strong>${escapeHtml(message.from === state.user.username ? `To ${message.to}` : `From ${message.from}`)}</strong><small>${formatTime(message.createdAt)}</small><p>${escapeHtml(message.content)}</p></article>`).join("") : `<p class="dialog-copy">No direct messages yet.</p>`;
-      elements.directMessagesDialog.showModal();
-      await api("/api/dms/read", { method: "POST" });
+      elements.panel.classList.remove("open");
+      await loadDirectMessages({ markRead: true });
     } catch (error) { notify(error.message); }
   }
 
@@ -118,6 +148,7 @@
 
   function renderServers() {
     elements.serverList.innerHTML = state.servers.map(server => `<button class="server-mark ${server.id === state.server?.id ? "active" : ""}" type="button" data-server-id="${escapeHtml(server.id)}" aria-label="${escapeHtml(server.name)}">${escapeHtml(initials(server.name))}</button>`).join("");
+    elements.directMessagesButton.classList.toggle("active", state.view === "directMessages");
     document.querySelectorAll("[data-server-id]").forEach(button => button.addEventListener("click", () => selectServer(button.dataset.serverId)));
   }
 
@@ -246,6 +277,7 @@
   }
 
   async function selectChannel(channelId) {
+    setView("channel");
     state.channel = channelId;
     const channel = state.channels.find(item => item.id === channelId);
     elements.title.textContent = channel?.name || "No channels yet";
@@ -263,6 +295,10 @@
   }
 
   async function loadMessages() {
+    if (state.view === "directMessages") {
+      try { await loadDirectMessages(); } catch (error) { notify(error.message); }
+      return;
+    }
     if (!state.channel) {
       elements.messages.innerHTML = `<section class="welcome empty-server"><div class="welcome-mark">+</div><p class="eyebrow">START HERE</p><h3>${escapeHtml(state.server?.name || "This server")} is ready for channels</h3><p>Open Server Settings to add categories, launch focused rooms, and shape the space around your community.</p><div class="welcome-pills"><span>Create channels</span><span>Organize by category</span><span>Invite your team</span></div></section>`;
       return;
