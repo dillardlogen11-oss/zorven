@@ -1,12 +1,12 @@
 {
   "name": "Zorven",
   "short_name": "Zorven",
-  "description": "A Fluxer-inspired community shell for messaging and lightweight voice rooms.",
+  "description": "A Fluxer community shell for messaging and lightweight voice rooms.",
   "start_url": "/server",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#17191f",
-  "theme_color": "#4641d9",
+  "background_color": "#1e1f22",
+  "theme_color": "#5865f2",
   "icons": [
     {
       "src": "/fluxer-symbol.svg",
