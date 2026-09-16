@@ -344,6 +344,9 @@ class ZorvenHandler(BaseHTTPRequestHandler):
         self.send_response(302)
         self.send_header("Location", location)
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", "0")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:")
         self.end_headers()
 
     def _send_download(self):
