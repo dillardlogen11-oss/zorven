@@ -105,3 +105,38 @@ def test_public_direct_messages_reject_invalid_targets(monkeypatch):
         httpd.server_close()
         thread.join(timeout=5)
         monkeypatch.setattr(server, "DATA", original_data)
+
+
+def test_public_dm_directory_excludes_self_and_unavailable_users(monkeypatch):
+    original_data = server.DATA
+    test_data = {
+        "users": {
+            "alice": {"username": "alice", "password": "unused", "role": "member"},
+            "bob": {"username": "bob", "password": "unused", "role": "member"},
+            "carol": {"username": "carol", "password": "unused", "role": "member", "banned": True},
+            "dave": {"username": "dave", "password": "unused", "role": "member", "deactivated": True},
+        },
+        "sessions": {"alice-token": "alice"},
+        "queue": [],
+        "orders": [],
+        "messages": [],
+        "voice": {},
+        "servers": {"zorven": {"id": "zorven", "name": "Zorven Community", "description": "The official Zorven community.", "owner": "system", "status": "active"}},
+        "maintenanceMode": False,
+        "directMessages": [],
+        "serverReviews": [],
+    }
+    monkeypatch.setattr(server, "DATA", test_data)
+    monkeypatch.setattr(server, "save_data", lambda: None)
+
+    httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.ZorvenHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        _, directory = api_request(httpd.server_port, "/api/users", token="alice-token")
+        assert [user["username"] for user in directory["users"]] == ["bob"]
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=5)
+        monkeypatch.setattr(server, "DATA", original_data)

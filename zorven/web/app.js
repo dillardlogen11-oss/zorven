@@ -666,11 +666,16 @@
     const content = elements.input.value.trim();
     if (!state.user) return openAuth();
     if (!content) return;
+    const recipient = elements.directMessageRecipient.value.trim().toLowerCase();
+    if (state.view === "directMessages" && !state.dmDirectory.some(user => user.username === recipient)) {
+      notify("Choose a valid direct message recipient.");
+      elements.directMessageRecipient.focus();
+      return;
+    }
     elements.input.disabled = true;
     elements.directMessageRecipient.disabled = true;
     try {
       if (state.view === "directMessages") {
-        const recipient = elements.directMessageRecipient.value.trim().toLowerCase();
         await api("/api/dms", { method: "POST", body: JSON.stringify({ to: recipient, content }) });
       } else {
         await api("/api/messages", { method: "POST", body: JSON.stringify({ serverId: state.server?.id, channelId: state.channel, content }) });
