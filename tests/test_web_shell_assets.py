@@ -58,12 +58,17 @@ def test_app_shell_default_banner_copy_matches_fluxer_shell_wording():
 
 def test_direct_messages_open_in_shell_view_instead_of_modal():
     app_js = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
+    app_html = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
     styles = (WEB_ROOT / "styles.css").read_text(encoding="utf-8")
 
+    assert 'id="directMessageRecipientInput"' in app_html
+    assert "Public member-to-member conversations open here in the main shell instead of a popup." in app_html
     assert 'elements.directMessagesScreen.hidden = !showingDirectMessages;' in app_js
+    assert 'await api("/api/dms", { method: "POST", body: JSON.stringify({ to: recipient, content }) });' in app_js
     assert 'elements.chatHeaderIcon.setAttribute("aria-label", showingDirectMessages ? "Direct messages" : "Channel");' in app_js
     assert "async function loadChannelMessages()" in app_js
     assert "async function refreshCurrentView()" in app_js
     assert '.direct-messages-screen {' in styles
+    assert '.composer-dm-target {' in styles
     assert '.direct-message-status {' in styles
     assert '.home-mark.active' in styles

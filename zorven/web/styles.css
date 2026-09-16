@@ -685,8 +685,17 @@ label {
 
 .composer {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 0 16px 16px;
+}
+
+.composer-dm-target {
+  flex: 0 1 220px;
+}
+
+.composer #messageInput {
+  flex: 1 1 260px;
 }
 
 .composer input,
@@ -926,6 +935,7 @@ label {
   padding: 14px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
 }
 
 .direct-message-meta {

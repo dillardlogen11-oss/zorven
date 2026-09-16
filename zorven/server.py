@@ -265,6 +265,10 @@ def is_banned(user):
     return bool(user and user.get("banned"))
 
 
+def is_dm_eligible(user):
+    return bool(user and not is_banned(user) and not user.get("deactivated"))
+
+
 def has_full_access(user):
     return user and set(ALL_PERMISSIONS).issubset(public_user(user)["permissions"])
 
@@ -382,6 +386,17 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Login required"}, 401)
                 return
             self._send_json({"messages": [message for message in DATA["directMessages"] if message["to"] == user["username"] or message["from"] == user["username"]]})
+        elif path == "/api/users":
+            user = get_user(self)
+            if not user:
+                self._send_json({"error": "Login required"}, 401)
+                return
+            users = [
+                public_user(candidate)
+                for candidate in DATA["users"].values()
+                if candidate["username"] != user["username"] and is_dm_eligible(candidate)
+            ]
+            self._send_json({"users": sorted(users, key=lambda candidate: candidate["username"])})
         elif path == "/api/team":
             team = [public_user(user) for user in DATA["users"].values() if user.get("role") == "staff" and not is_banned(user)]
             self._send_json({"team": team})
@@ -455,6 +470,37 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                     message["read"] = True
             save_data()
             self._send_json({"read": True})
+        elif path == "/api/dms":
+            user = get_user(self)
+            if not user:
+                self._send_json({"error": "Login required"}, 401)
+                return
+            if not is_dm_eligible(user):
+                self._send_json({"error": "This account cannot send direct messages"}, 403)
+                return
+            recipient_name = str(payload.get("to", "")).strip().lower()
+            content = str(payload.get("content", "")).strip()
+            if not recipient_name or not content:
+                self._send_json({"error": "A recipient and message are required"}, 400)
+                return
+            if recipient_name == user["username"]:
+                self._send_json({"error": "You cannot direct message yourself"}, 400)
+                return
+            recipient = DATA["users"].get(recipient_name)
+            if not is_dm_eligible(recipient):
+                self._send_json({"error": "That account is unavailable for direct messages"}, 404)
+                return
+            message = {
+                "id": secrets.token_hex(8),
+                "from": user["username"],
+                "to": recipient_name,
+                "content": content[:2000],
+                "createdAt": int(time.time()),
+                "read": False,
+            }
+            DATA["directMessages"].append(message)
+            save_data()
+            self._send_json({"message": message}, 201)
         elif path == "/api/auth/register":
             username = str(payload.get("username", "")).strip().lower()
             password = str(payload.get("password", ""))
