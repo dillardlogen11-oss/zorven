@@ -109,7 +109,8 @@
   function directMessageMarkup(message) {
     const direction = message.from === state.user.username ? `To ${message.to}` : `From ${message.from}`;
     const subject = message.subject ? `<span class="direct-message-subject">${escapeHtml(message.subject)}</span>` : "";
-    return `<article class="direct-message"><div class="direct-message-meta"><div><strong>${escapeHtml(direction)}</strong>${subject}</div><small>${formatTime(message.createdAt)}</small></div><p>${escapeHtml(message.content)}</p></article>`;
+    const status = !message.read && message.to === state.user.username ? `<span class="direct-message-status">New</span>` : "";
+    return `<article class="direct-message"><div class="direct-message-meta"><div><strong>${escapeHtml(direction)}</strong>${subject}${status}</div><small>${formatTime(message.createdAt)}</small></div><p>${escapeHtml(message.content)}</p></article>`;
   }
 
   function renderDirectMessages(messages) {
@@ -124,9 +125,9 @@
   async function loadDirectMessages({ markRead = false } = {}) {
     const messages = (await api("/api/dms")).messages;
     renderDirectMessages(messages);
-    if (markRead) {
+    if (markRead && messages.some(message => !message.read && message.to === state.user.username)) {
       await api("/api/dms/read", { method: "POST" });
-      renderDirectMessages((await api("/api/dms")).messages);
+      renderDirectMessages(messages.map(message => message.to === state.user.username ? { ...message, read: true } : message));
     }
   }
 
@@ -290,7 +291,7 @@
     elements.input.disabled = !channel;
     elements.panel.classList.remove("open");
     renderChannels();
-    await loadMessages();
+    await refreshCurrentView();
   }
 
   function messageMarkup(message) {
@@ -298,11 +299,7 @@
     return `<article class="message"><span class="avatar">${escapeHtml(initials(message.username))}</span><div><div class="message-meta"><strong>${escapeHtml(message.username)}</strong>${tag}<span class="message-time">${formatTime(message.createdAt)}</span></div><p class="message-body">${formatMessageContent(message.content, state.user?.username)}</p></div></article>`;
   }
 
-  async function loadMessages() {
-    if (state.view === "directMessages") {
-      try { await loadDirectMessages(); } catch (error) { notify(error.message); }
-      return;
-    }
+  async function loadChannelMessages() {
     if (!state.channel) {
       elements.messages.innerHTML = `<section class="welcome empty-server"><div class="welcome-mark">+</div><p class="eyebrow">START HERE</p><h3>${escapeHtml(state.server?.name || "This server")} is ready for channels</h3><p>Open Server Settings to add categories, launch focused rooms, and shape the space around your community.</p><div class="welcome-pills"><span>Create channels</span><span>Organize by category</span><span>Invite your team</span></div></section>`;
       return;
@@ -321,6 +318,14 @@
       }
       if (messages.length) state.lastMessageIdByChannel[state.channel] = messages[messages.length - 1].id;
     } catch (error) { notify(error.message); }
+  }
+
+  async function refreshCurrentView() {
+    if (state.view === "directMessages") {
+      try { await loadDirectMessages(); } catch (error) { notify(error.message); }
+      return;
+    }
+    await loadChannelMessages();
   }
 
   async function bootstrap() {
@@ -634,7 +639,7 @@
     if (!state.user) return openAuth();
     if (!content) return;
     elements.input.disabled = true;
-    try { await api("/api/messages", { method: "POST", body: JSON.stringify({ serverId: state.server?.id, channelId: state.channel, content }) }); elements.input.value = ""; await loadMessages(); }
+    try { await api("/api/messages", { method: "POST", body: JSON.stringify({ serverId: state.server?.id, channelId: state.channel, content }) }); elements.input.value = ""; await refreshCurrentView(); }
     catch (error) { notify(error.message); }
     finally { elements.input.disabled = false; elements.input.focus(); }
   });
@@ -643,5 +648,5 @@
   bootstrap().then(() => {
     if (new URLSearchParams(window.location.search).get("register") === "1") openAuth(true);
   });
-  window.setInterval(() => { if (document.visibilityState === "visible") { loadMessages(); loadVoice(); loadTeam(); } }, 15000);
+  window.setInterval(() => { if (document.visibilityState === "visible") { refreshCurrentView(); loadVoice(); loadTeam(); } }, 15000);
 })();

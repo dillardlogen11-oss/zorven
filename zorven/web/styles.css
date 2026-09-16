@@ -949,6 +949,17 @@ label {
   font-weight: 600;
 }
 
+.direct-message-status {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+  color: #dfe3ff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .settings-dialog {
   width: min(920px, calc(100% - 28px));
 }
