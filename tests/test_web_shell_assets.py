@@ -27,3 +27,9 @@ def test_login_and_app_shell_expose_fluxer_style_controls():
     assert 'href="/download/zorven-client"' in login_html
     assert "FLUXER SHELL" in app_html
     assert 'id="serverBannerStats"' in app_html
+
+
+def test_app_shell_default_banner_copy_matches_fluxer_shell_wording():
+    app_js = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
+
+    assert "A Fluxer shell for messages, rooms, and lightweight voice spaces." in app_js
