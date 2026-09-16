@@ -105,7 +105,10 @@
       </section>
       <div class="messages" id="messages" aria-live="polite"></div>
       <form class="composer" id="messageForm">
-        <input id="directMessageRecipientInput" class="composer-dm-target" maxlength="40" autocomplete="off" placeholder="Send to username" aria-label="Direct message recipient" hidden list="directMessageRecipients">
+        <label class="composer-dm-target-wrap" for="directMessageRecipientInput" hidden>
+          <span class="composer-dm-target-label">TO</span>
+          <input id="directMessageRecipientInput" class="composer-dm-target" maxlength="40" autocomplete="off" placeholder="username" aria-label="Direct message recipient" list="directMessageRecipients">
+        </label>
         <input id="messageInput" maxlength="2000" autocomplete="off" placeholder="Message #general" aria-label="Message channel">
         <button class="send-button" type="submit" aria-label="Send message">Send</button>
       </form>

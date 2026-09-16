@@ -690,6 +690,19 @@ label {
   padding: 0 16px 16px;
 }
 
+.composer-dm-target-wrap {
+  display: grid;
+  flex: 0 1 220px;
+  gap: 4px;
+}
+
+.composer-dm-target-label {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .composer-dm-target {
   flex: 0 1 220px;
 }
