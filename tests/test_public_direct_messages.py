@@ -118,7 +118,7 @@ def test_dm_user_discovery_and_validation(monkeypatch):
 
     httpd, thread = run_server()
     try:
-        status, payload = request_json(httpd.server_port, "/api/users", token="alice-token")
+        status, payload = request_json(httpd.server_port, "/api/dms/recipients", token="alice-token")
         assert status == 200
         assert payload["users"] == [{"username": "bob", "displayName": "Bobby"}]
 
@@ -184,7 +184,7 @@ def test_banned_users_cannot_access_dm_endpoints(monkeypatch):
         assert status == 403
         assert payload["error"] == "This account is banned"
 
-        status, payload = request_json(httpd.server_port, "/api/users", token="banned-token")
+        status, payload = request_json(httpd.server_port, "/api/dms/recipients", token="banned-token")
         assert status == 403
         assert payload["error"] == "This account is banned"
 

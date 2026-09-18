@@ -389,7 +389,7 @@ class ZorvenHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "This account is banned"}, 403)
                 return
             self._send_json({"messages": [message for message in DATA["directMessages"] if message["to"] == user["username"] or message["from"] == user["username"]]})
-        elif path == "/api/users":
+        elif path == "/api/dms/recipients":
             user = get_user(self)
             if not user:
                 self._send_json({"error": "Login required"}, 401)

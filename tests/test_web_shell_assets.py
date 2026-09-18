@@ -64,7 +64,7 @@ def test_direct_messages_open_in_shell_view_instead_of_modal():
     assert 'elements.directMessagesScreen.hidden = !showingDirectMessages;' in app_js
     assert 'elements.chatHeaderIcon.setAttribute("aria-label", showingDirectMessages ? "Direct messages" : "Channel");' in app_js
     assert 'elements.directMessageForm.addEventListener("submit", async event => {' in app_js
-    assert 'await api("/api/users")' in app_js
+    assert 'await api("/api/dms/recipients")' in app_js
     assert "async function loadChannelMessages()" in app_js
     assert "async function refreshCurrentView()" in app_js
     assert '.direct-messages-screen {' in styles

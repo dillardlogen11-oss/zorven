@@ -115,7 +115,7 @@
   }
 
   async function loadDirectMessageRecipients(selectedRecipient = "") {
-    const users = (await api("/api/users")).users;
+    const users = (await api("/api/dms/recipients")).users;
     const options = users.map(user => `<option value="${escapeHtml(user.username)}">${escapeHtml(user.displayName || user.username)} (@${escapeHtml(user.username)})</option>`);
     elements.directMessageRecipient.innerHTML = [`<option value="">Select a member</option>`, ...options].join("");
     elements.directMessageRecipient.value = users.some(user => user.username === selectedRecipient) ? selectedRecipient : "";
