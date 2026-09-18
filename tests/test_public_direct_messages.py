@@ -9,7 +9,7 @@ from zorven import server
 def request_json(port, path, method="GET", token=None, payload=None):
     headers = {}
     if token:
-        headers["Authorization"] = f"******"
+        headers["Authorization"] = " ".join(("Bearer", token))
     if payload is not None:
         headers["Content-Type"] = "application/json"
     request = Request(
