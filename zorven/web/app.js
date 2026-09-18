@@ -669,7 +669,13 @@
     const to = elements.directMessageRecipient.value;
     const content = elements.directMessageContent.value.trim();
     if (!to || !content) return;
-    elements.directMessageContent.disabled = true;
+    const controls = [
+      elements.directMessageRecipient,
+      elements.directMessageSubject,
+      elements.directMessageContent,
+      ...elements.directMessageForm.querySelectorAll("button"),
+    ];
+    controls.forEach(control => { control.disabled = true; });
     try {
       await api("/api/dms", { method: "POST", body: JSON.stringify({ to, subject: elements.directMessageSubject.value.trim(), content }) });
       elements.directMessageContent.value = "";
@@ -679,7 +685,7 @@
     } catch (error) {
       notify(error.message);
     } finally {
-      elements.directMessageContent.disabled = false;
+      controls.forEach(control => { control.disabled = false; });
       elements.directMessageContent.focus();
     }
   });
