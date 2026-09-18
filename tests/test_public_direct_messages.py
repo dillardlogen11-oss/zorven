@@ -191,6 +191,16 @@ def test_banned_users_cannot_access_dm_endpoints(monkeypatch):
         status, payload = request_json(httpd.server_port, "/api/dms/read", method="POST", token="banned-token", payload={})
         assert status == 403
         assert payload["error"] == "This account is banned"
+
+        status, payload = request_json(
+            httpd.server_port,
+            "/api/dms",
+            method="POST",
+            token="banned-token",
+            payload={"to": "bob", "content": "hi"},
+        )
+        assert status == 403
+        assert payload["error"] == "This account is banned"
     finally:
         httpd.shutdown()
         httpd.server_close()

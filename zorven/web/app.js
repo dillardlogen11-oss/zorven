@@ -135,9 +135,8 @@
       : `<p class="dialog-copy">No direct messages yet.</p>`;
   }
 
-  async function loadDirectMessages({ markRead = false } = {}) {
-    const selectedRecipient = elements.directMessageRecipient.value;
-    await loadDirectMessageRecipients(selectedRecipient);
+  async function loadDirectMessages({ markRead = false, selectedRecipient } = {}) {
+    await loadDirectMessageRecipients(selectedRecipient ?? elements.directMessageRecipient.value);
     const messages = (await api("/api/dms")).messages;
     renderDirectMessages(messages);
     if (markRead && messages.some(message => !message.read && message.to === state.user.username)) {
@@ -680,7 +679,7 @@
       await api("/api/dms", { method: "POST", body: JSON.stringify({ to, subject: elements.directMessageSubject.value.trim(), content }) });
       elements.directMessageContent.value = "";
       elements.directMessageSubject.value = "";
-      await loadDirectMessages();
+      await loadDirectMessages({ selectedRecipient: to });
       notify("Direct message sent.");
     } catch (error) {
       notify(error.message);
