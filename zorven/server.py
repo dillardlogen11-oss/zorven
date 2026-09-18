@@ -265,6 +265,10 @@ def is_banned(user):
     return bool(user and user.get("banned"))
 
 
+def can_receive_direct_messages(user):
+    return bool(user and not is_banned(user) and not user.get("deactivated"))
+
+
 def has_full_access(user):
     return user and set(ALL_PERMISSIONS).issubset(public_user(user)["permissions"])
 
@@ -381,7 +385,24 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"error": "Login required"}, 401)
                 return
+            if is_banned(user):
+                self._send_json({"error": "This account is banned"}, 403)
+                return
             self._send_json({"messages": [message for message in DATA["directMessages"] if message["to"] == user["username"] or message["from"] == user["username"]]})
+        elif path == "/api/users":
+            user = get_user(self)
+            if not user:
+                self._send_json({"error": "Login required"}, 401)
+                return
+            if is_banned(user):
+                self._send_json({"error": "This account is banned"}, 403)
+                return
+            users = [
+                {"username": account["username"], "displayName": account.get("displayName", account["username"])}
+                for account in DATA["users"].values()
+                if account["username"] != user["username"] and can_receive_direct_messages(account)
+            ]
+            self._send_json({"users": sorted(users, key=lambda account: account["username"])})
         elif path == "/api/team":
             team = [public_user(user) for user in DATA["users"].values() if user.get("role") == "staff" and not is_banned(user)]
             self._send_json({"team": team})
@@ -424,6 +445,8 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             self._send_file("manifest.json", "application/manifest+json; charset=utf-8")
         elif path == "/fluxer-symbol.svg":
             self._send_file("fluxer-symbol.svg", "image/svg+xml")
+        elif path == "/zorven-mark.svg":
+            self._send_file("zorven-mark.svg", "image/svg+xml")
         elif path == "/admin.css":
             self._send_file("admin.css", "text/css; charset=utf-8")
         elif path == "/maintenance.css":
@@ -450,11 +473,46 @@ class ZorvenHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"error": "Login required"}, 401)
                 return
+            if is_banned(user):
+                self._send_json({"error": "This account is banned"}, 403)
+                return
             for message in DATA["directMessages"]:
                 if message["to"] == user["username"]:
                     message["read"] = True
             save_data()
             self._send_json({"read": True})
+        elif path == "/api/dms":
+            user = get_user(self)
+            if not user:
+                self._send_json({"error": "Login required"}, 401)
+                return
+            if is_banned(user):
+                self._send_json({"error": "This account is banned"}, 403)
+                return
+            recipient = find_user(payload.get("to"))
+            content = str(payload.get("content", "")).strip()
+            subject = str(payload.get("subject", "")).strip()[:120]
+            if not recipient or not can_receive_direct_messages(recipient):
+                self._send_json({"error": "A valid recipient is required"}, 400)
+                return
+            if recipient["username"] == user["username"]:
+                self._send_json({"error": "You cannot send a direct message to yourself"}, 400)
+                return
+            if not content:
+                self._send_json({"error": "Message content is required"}, 400)
+                return
+            message = {
+                "id": secrets.token_hex(8),
+                "from": user["username"],
+                "to": recipient["username"],
+                "subject": subject,
+                "content": content[:2000],
+                "createdAt": int(time.time()),
+                "read": False,
+            }
+            DATA["directMessages"].append(message)
+            save_data()
+            self._send_json({"message": message}, 201)
         elif path == "/api/auth/register":
             username = str(payload.get("username", "")).strip().lower()
             password = str(payload.get("password", ""))

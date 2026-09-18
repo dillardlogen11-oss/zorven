@@ -20,9 +20,9 @@
   right: -8%;
   width: min(520px, 60vw);
   aspect-ratio: 1;
-  border: 1px solid rgba(70, 65, 217, 0.25);
+  border: 1px solid rgba(91, 124, 255, 0.25);
   border-radius: 50%;
-  box-shadow: 0 0 0 28px rgba(70, 65, 217, 0.09), 0 0 0 56px rgba(0, 176, 244, 0.04);
+  box-shadow: 0 0 0 28px rgba(91, 124, 255, 0.09), 0 0 0 56px rgba(18, 201, 210, 0.08);
   content: "";
 }
 
@@ -34,7 +34,7 @@
   height: 10px;
   border-radius: 50%;
   background: var(--brand-focus);
-  box-shadow: 0 0 22px 4px rgba(0, 176, 244, 0.42);
+  box-shadow: 0 0 22px 4px rgba(18, 201, 210, 0.42);
   content: "";
 }
 
@@ -102,7 +102,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--brand-primary);
-  box-shadow: 0 0 0 5px rgba(70, 65, 217, 0.2);
+  box-shadow: 0 0 0 5px rgba(91, 124, 255, 0.2);
 }
 
 .maintenance-actions {
