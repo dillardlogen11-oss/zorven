@@ -6,7 +6,7 @@
     shield: ["⬟", "#71c7ff"], heart: ["♥", "#ff6da8"], bolt: ["ϟ", "#c98cff"], member: ["●", "#949ba4"]
   };
   const THEME_STORAGE_KEY = "zorven-theme";
-  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", view: "channel", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {}, theme: "dark", lastMessageIdByChannel: {} };
+  const state = { token: localStorage.getItem("zorven-token") || "", user: null, servers: [], server: null, channels: [], channel: "general", view: "channel", registerMode: false, voiceRooms: {}, voiceChannel: null, muted: false, microphoneStream: null, team: [], hideMutedChannels: false, collapsedCategories: {}, theme: "dark", lastMessageIdByChannel: {}, dmRecipients: [] };
   const elements = {
     authDialog: document.querySelector("#authDialog"), authForm: document.querySelector("#authForm"), authHeading: document.querySelector("#authHeading"), authCopy: document.querySelector("#authCopy"), authSubmit: document.querySelector("#authSubmit"), authSwitch: document.querySelector("#authSwitch"), authError: document.querySelector("#authError"), username: document.querySelector("#usernameInput"), password: document.querySelector("#passwordInput"),
     serverDialog: document.querySelector("#serverDialog"), serverForm: document.querySelector("#serverForm"), serverName: document.querySelector("#serverNameInput"), serverCreateDescription: document.querySelector("#serverCreateDescriptionInput"), serverError: document.querySelector("#serverError"),
@@ -114,14 +114,15 @@
     return `<article class="direct-message"><div class="direct-message-meta"><div><strong>${escapeHtml(direction)}</strong>${subject}${status}</div><small>${formatTime(message.createdAt)}</small></div><p>${escapeHtml(message.content)}</p><button class="text-button dm-reply-button" type="button" data-dm-reply="${escapeHtml(conversationWith)}">Reply</button></article>`;
   }
 
-  async function loadDirectMessageRecipients(selectedRecipient = "") {
-    const users = (await api("/api/dms/recipients")).users;
-    const options = users.map(user => `<option value="${escapeHtml(user.username)}">${escapeHtml(user.displayName || user.username)} (@${escapeHtml(user.username)})</option>`);
+  async function loadDirectMessageRecipients(selectedRecipient = "", { force = false } = {}) {
+    if (force || !state.dmRecipients.length) state.dmRecipients = (await api("/api/dms/recipients")).users;
+    const options = state.dmRecipients.map(user => `<option value="${escapeHtml(user.username)}">${escapeHtml(user.displayName || user.username)} (@${escapeHtml(user.username)})</option>`);
     elements.directMessageRecipient.innerHTML = [`<option value="">Select a member</option>`, ...options].join("");
-    elements.directMessageRecipient.value = users.some(user => user.username === selectedRecipient) ? selectedRecipient : "";
+    elements.directMessageRecipient.value = state.dmRecipients.some(user => user.username === selectedRecipient) ? selectedRecipient : "";
   }
 
   function primeDirectMessageComposer(recipient = "") {
+    setView("directMessages");
     if (recipient) elements.directMessageRecipient.value = recipient;
     elements.directMessageContent.focus();
   }
@@ -386,10 +387,12 @@
     try {
       await api("/api/auth/logout", { method: "POST" });
     } catch (error) {
+      if (error.message.includes("recipient")) await loadDirectMessageRecipients(to, { force: true });
       notify(error.message);
     } finally {
       state.token = "";
       state.user = null;
+      state.dmRecipients = [];
       localStorage.removeItem("zorven-token");
       renderIdentity();
       await bootstrap();
@@ -574,7 +577,7 @@
         notify("Account created. Please sign in."); openAuth(false); return;
       }
       const result = await api("/api/auth/login", { method: "POST", body: JSON.stringify(payload) });
-      state.token = result.token; state.user = result.user; localStorage.setItem("zorven-token", state.token); renderIdentity(); elements.authDialog.close(); notify("You are signed in.");
+      state.token = result.token; state.user = result.user; state.dmRecipients = []; localStorage.setItem("zorven-token", state.token); renderIdentity(); elements.authDialog.close(); notify("You are signed in.");
     } catch (error) { elements.authError.textContent = error.message; }
   });
 
