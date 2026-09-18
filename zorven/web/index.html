@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#4641d9">
+  <meta name="theme-color" content="#5b7cff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Zorven | Community</title>
-  <link rel="icon" href="/fluxer-symbol.svg" type="image/svg+xml">
+  <link rel="icon" href="/zorven-mark.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -15,7 +15,7 @@
   <main class="app-shell" aria-label="Zorven community chat">
     <aside class="rail" aria-label="Communities">
       <button class="home-mark" id="directMessagesButton" type="button" aria-label="Direct messages">
-        <img src="/fluxer-symbol.svg" alt="" class="rail-symbol">
+        <img src="/zorven-mark.svg" alt="" class="rail-symbol">
       </button>
       <span class="rail-divider" aria-hidden="true"></span>
       <div id="serverList" class="server-list"></div>
@@ -30,9 +30,9 @@
     <aside class="channel-panel" id="channelPanel">
       <header class="community-header">
         <div class="brand-lockup">
-          <img src="/fluxer-symbol.svg" alt="" class="brand-symbol">
+          <img src="/zorven-mark.svg" alt="" class="brand-symbol">
           <div class="header-copy">
-            <p class="eyebrow">FLUXER SHELL</p>
+            <p class="eyebrow">ZORVEN SHELL</p>
             <button class="server-name-button" id="serverMenuButton" type="button" aria-expanded="false">Zorven <span class="server-status-dot" aria-label="Online"></span><span class="server-chevron" aria-hidden="true">&#9662;</span></button>
           </div>
         </div>
@@ -99,8 +99,19 @@
           <div class="welcome-mark">&#9993;</div>
           <p class="eyebrow">DIRECT MESSAGES</p>
           <h3>Direct messages</h3>
-          <p>Private updates from Zorven staff open here in the main shell instead of a popup.</p>
+          <p>Start private conversations with other members and keep replies in one place.</p>
         </section>
+        <form class="dm-compose" id="directMessageForm">
+          <label for="directMessageRecipient">RECIPIENT</label>
+          <select id="directMessageRecipient" required aria-label="Direct message recipient">
+            <option value="">Select a member</option>
+          </select>
+          <label for="directMessageSubject">SUBJECT (OPTIONAL)</label>
+          <input id="directMessageSubject" type="text" maxlength="120" autocomplete="off" placeholder="Quick context">
+          <label for="directMessageContent">MESSAGE</label>
+          <textarea id="directMessageContent" maxlength="2000" rows="3" required placeholder="Write a direct message"></textarea>
+          <button class="send-button" type="submit">Send direct message</button>
+        </form>
         <div id="directMessagesList" class="direct-messages-list"></div>
       </section>
       <div class="messages" id="messages" aria-live="polite"></div>

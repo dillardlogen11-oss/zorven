@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Zorven mark</title>
+  <desc id="desc">A stylized Z mark built from layered geometric panels.</desc>
+  <defs>
+    <linearGradient id="zorvenGradient" x1="96" y1="64" x2="432" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b7cff"/>
+      <stop offset="1" stop-color="#12c9d2"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#111622"/>
+  <path d="M124 120h264c22 0 34 26 20 43L245 320h155c18 0 29 19 20 35l-32 61c-4 8-12 12-20 12H112c-21 0-33-24-21-41l165-231H132c-19 0-30-21-19-37l13-20c4-6 11-9 18-9Z" fill="url(#zorvenGradient)"/>
+  <path d="M357 118 164 394" stroke="#dff8ff" stroke-width="24" stroke-linecap="round" opacity=".15"/>
+</svg>

@@ -1,7 +1,7 @@
 :root {
   color-scheme: dark;
-  --brand-primary: #5865f2;
-  --brand-primary-strong: #4752c4;
+  --brand-primary: #5b7cff;
+  --brand-primary-strong: #3f5de8;
   --brand-focus: #00a8fc;
   --background-base: #1e1f22;
   --background-secondary: #2b2d31;
@@ -912,7 +912,7 @@ label {
 
 .direct-messages-screen {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
 }
@@ -920,6 +920,40 @@ label {
 .direct-messages-welcome {
   margin: 0;
   padding: 20px 20px 12px;
+}
+
+.dm-compose {
+  display: grid;
+  gap: 8px;
+  padding: 0 20px 16px;
+}
+
+.dm-compose label {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.dm-compose input,
+.dm-compose select,
+.dm-compose textarea {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--background-base);
+  color: var(--text-primary);
+}
+
+.dm-compose textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.dm-compose .send-button {
+  justify-self: start;
+  min-height: 42px;
 }
 
 .direct-message {
@@ -958,6 +992,10 @@ label {
   color: #dfe3ff;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.dm-reply-button {
+  margin-top: 10px;
 }
 
 .settings-dialog {
@@ -1164,6 +1202,7 @@ label {
   .shell-banner,
   .messages,
   .composer,
+  .dm-compose,
   .direct-messages-list,
   .direct-messages-welcome {
     padding-left: 16px;
